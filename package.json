@@ -10,7 +10,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "env:dev": "node scripts/switch-env.js development",
+    "env:prod": "node scripts/switch-env.js production",
+    "env:status": "node -e \"const fs = require('fs'); const env = fs.readFileSync('.env.local', 'utf8'); const match = env.match(/ENVIRONMENT=\\\"([^\\\"]+)\\\"/); console.log('🌍 Current environment:', match ? match[1] : 'unknown');\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
