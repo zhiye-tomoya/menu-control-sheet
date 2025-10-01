@@ -32,12 +32,28 @@ const saveToStorage = (data: MenuData[]) => {
   }
 };
 
-// GET /api/menus - Get all menus
-export async function GET() {
+// GET /api/menus - Get all menus with optional pagination
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "0"); // 0 means no pagination
+    const offset = limit > 0 ? (page - 1) * limit : 0;
+
     if (isDatabaseEnabled && db) {
       // Use database
-      const result = await db.select().from(menus);
+
+      // Get total count for pagination info
+      const totalCountResult = await db.select().from(menus);
+      const total = totalCountResult.length;
+
+      // Apply pagination if limit is specified
+      let result;
+      if (limit > 0) {
+        result = await db.select().from(menus).limit(limit).offset(offset);
+      } else {
+        result = await db.select().from(menus);
+      }
       const formattedMenus = result.map((menu) => ({
         id: menu.id,
         name: menu.name,
@@ -50,9 +66,39 @@ export async function GET() {
         updatedAt: menu.updatedAt,
       }));
 
-      return NextResponse.json(formattedMenus);
+      // Return paginated response
+      if (limit > 0) {
+        const totalPages = Math.ceil(total / limit);
+        return NextResponse.json({
+          data: formattedMenus,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        });
+      } else {
+        // Return all data without pagination info for backward compatibility
+        return NextResponse.json(formattedMenus);
+      }
     } else {
       // Fallback to empty array (client-side localStorage will be used instead)
+      if (limit > 0) {
+        return NextResponse.json({
+          data: [],
+          pagination: {
+            page: 1,
+            limit,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        });
+      }
       return NextResponse.json([]);
     }
   } catch (error) {

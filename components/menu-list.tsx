@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { Plus, Edit, Trash2, Search, Calculator, Loader2, FolderPlus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useMenus, useDeleteMenu } from "@/hooks/use-menu-queries";
+import { useMenusPaginated, useDeleteMenu } from "@/hooks/use-menu-queries";
 import { categoryClientService } from "@/lib/services/category-client-service";
-import { Category, MenuItem } from "@/lib/types";
+import { Category, MenuItem, PaginatedResponse } from "@/lib/types";
 import { toast } from "sonner";
 
 interface MenuListProps {
@@ -26,8 +27,20 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
-  const { data: menus = [], isLoading, error } = useMenus();
+  // Per-category pagination state - key is categoryId, value is current page
+  const [categoryPages, setCategoryPages] = useState<Record<string, number>>({});
+  const [uncategorizedPage, setUncategorizedPage] = useState(1);
+  const menusPerCategory = 6; // Show 6 menus per category
+
+  // Get all menus (no global pagination, we'll handle it per category)
+  const { data, isLoading, error } = useMenusPaginated({
+    page: 1,
+    limit: 1000, // Get all menus, we'll paginate client-side per category
+  });
   const deleteMenuMutation = useDeleteMenu();
+
+  // Extract menus from response
+  const menus = Array.isArray(data) ? data : (data as PaginatedResponse<MenuItem>)?.data || [];
 
   // Load categories
   useEffect(() => {
@@ -45,20 +58,45 @@ export function MenuList({ onEditMenu }: MenuListProps) {
 
   const filteredMenus = menus.filter((menu) => menu.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
+  // Helper function to get current page for a category
+  const getCategoryPage = (categoryId: string) => categoryPages[categoryId] || 1;
+
+  // Helper function to set page for a category
+  const setCategoryPage = (categoryId: string, page: number) => {
+    setCategoryPages((prev) => ({ ...prev, [categoryId]: page }));
+  };
+
+  // Helper function to get paginated menus for a category
+  const getPaginatedMenus = (menus: MenuItem[], page: number) => {
+    const startIndex = (page - 1) * menusPerCategory;
+    const endIndex = startIndex + menusPerCategory;
+    return menus.slice(startIndex, endIndex);
+  };
+
   // Group menus by category and sort alphabetically within each category
   const groupedMenus = categories
     .map((category) => {
-      const categoryMenus = filteredMenus.filter((menu) => menu.categoryId === category.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+      const allCategoryMenus = filteredMenus.filter((menu) => menu.categoryId === category.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+      const currentPage = getCategoryPage(category.id);
+      const paginatedMenus = getPaginatedMenus(allCategoryMenus, currentPage);
+      const totalPages = Math.ceil(allCategoryMenus.length / menusPerCategory);
 
       return {
         category,
-        menus: categoryMenus,
+        allMenus: allCategoryMenus,
+        menus: paginatedMenus,
+        currentPage,
+        totalPages,
+        hasMultiplePages: totalPages > 1,
       };
     })
-    .filter((group) => group.menus.length > 0);
+    .filter((group) => group.allMenus.length > 0);
 
-  // Get menus without categories (fallback)
-  const uncategorizedMenus = filteredMenus.filter((menu) => !categories.some((cat) => cat.id === menu.categoryId)).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  // Get menus without categories (fallback) with pagination
+  const allUncategorizedMenus = filteredMenus.filter((menu) => !categories.some((cat) => cat.id === menu.categoryId)).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  const uncategorizedMenus = getPaginatedMenus(allUncategorizedMenus, uncategorizedPage);
+  const uncategorizedTotalPages = Math.ceil(allUncategorizedMenus.length / menusPerCategory);
+  const uncategorizedHasMultiplePages = uncategorizedTotalPages > 1;
 
   const handleDeleteMenu = async (menuId: string) => {
     try {
@@ -197,9 +235,14 @@ export function MenuList({ onEditMenu }: MenuListProps) {
           ) : (
             <div className='space-y-8'>
               {/* Render grouped menus by category */}
-              {groupedMenus.map(({ category, menus }) => (
+              {groupedMenus.map(({ category, menus, currentPage, totalPages, hasMultiplePages, allMenus }) => (
                 <div key={category.id}>
-                  <h2 className='text-xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary'>{category.name}</h2>
+                  <div className='flex justify-between items-center mb-4'>
+                    <h2 className='text-xl font-bold text-foreground pb-2 border-b-2 border-primary'>{category.name}</h2>
+                    <span className='text-sm text-muted-foreground'>
+                      {allMenus.length} 件中 {Math.min((currentPage - 1) * menusPerCategory + 1, allMenus.length)} - {Math.min(currentPage * menusPerCategory, allMenus.length)} 件表示
+                    </span>
+                  </div>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
                     {menus.map((menu) => (
                       <Card key={menu.id} className='border-2 border-primary bg-muted/30 hover:bg-muted/50 transition-colors'>
@@ -284,13 +327,65 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                       </Card>
                     ))}
                   </div>
+                  {/* Category Pagination */}
+                  {hasMultiplePages && (
+                    <div className='mt-6'>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href='#'
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (currentPage > 1) {
+                                  setCategoryPage(category.id, currentPage - 1);
+                                }
+                              }}
+                              className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                href='#'
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setCategoryPage(category.id, page);
+                                }}
+                                isActive={currentPage === page}
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              href='#'
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (currentPage < totalPages) {
+                                  setCategoryPage(category.id, currentPage + 1);
+                                }
+                              }}
+                              className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </div>
               ))}
 
               {/* Render uncategorized menus if any */}
-              {uncategorizedMenus.length > 0 && (
+              {allUncategorizedMenus.length > 0 && (
                 <div>
-                  <h2 className='text-xl font-bold text-foreground mb-4 pb-2 border-b-2 border-primary'>未分類</h2>
+                  <div className='flex justify-between items-center mb-4'>
+                    <h2 className='text-xl font-bold text-foreground pb-2 border-b-2 border-primary'>未分類</h2>
+                    <span className='text-sm text-muted-foreground'>
+                      {allUncategorizedMenus.length} 件中 {Math.min((uncategorizedPage - 1) * menusPerCategory + 1, allUncategorizedMenus.length)} - {Math.min(uncategorizedPage * menusPerCategory, allUncategorizedMenus.length)} 件表示
+                    </span>
+                  </div>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
                     {uncategorizedMenus.map((menu) => (
                       <Card key={menu.id} className='border-2 border-primary bg-muted/30 hover:bg-muted/50 transition-colors'>
@@ -375,6 +470,53 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                       </Card>
                     ))}
                   </div>
+                  {/* Uncategorized Pagination */}
+                  {uncategorizedHasMultiplePages && (
+                    <div className='mt-6'>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href='#'
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (uncategorizedPage > 1) {
+                                  setUncategorizedPage(uncategorizedPage - 1);
+                                }
+                              }}
+                              className={uncategorizedPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: uncategorizedTotalPages }, (_, i) => i + 1).map((page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                href='#'
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setUncategorizedPage(page);
+                                }}
+                                isActive={uncategorizedPage === page}
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              href='#'
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (uncategorizedPage < uncategorizedTotalPages) {
+                                  setUncategorizedPage(uncategorizedPage + 1);
+                                }
+                              }}
+                              className={uncategorizedPage >= uncategorizedTotalPages ? "pointer-events-none opacity-50" : ""}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

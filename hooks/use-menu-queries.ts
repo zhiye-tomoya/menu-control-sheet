@@ -1,22 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { menuService } from "@/lib/services/menu-service";
-import { CreateMenuInput, UpdateMenuInput } from "@/lib/types";
+import { CreateMenuInput, UpdateMenuInput, PaginationParams, MenuItem, PaginatedResponse } from "@/lib/types";
 import { toast } from "sonner";
 
 // Query keys for consistent caching
 export const menuQueryKeys = {
   all: ["menus"] as const,
   lists: () => [...menuQueryKeys.all, "list"] as const,
-  list: (filters: string) => [...menuQueryKeys.lists(), { filters }] as const,
+  list: (params?: PaginationParams) => [...menuQueryKeys.lists(), params] as const,
   details: () => [...menuQueryKeys.all, "detail"] as const,
   detail: (id: string) => [...menuQueryKeys.details(), id] as const,
 };
 
-// Hook to get all menus
+// Hook to get all menus (backward compatibility - returns all menus)
 export function useMenus() {
   return useQuery({
-    queryKey: menuQueryKeys.lists(),
-    queryFn: menuService.getMenus,
+    queryKey: menuQueryKeys.list(),
+    queryFn: () => menuService.getMenus(),
+  });
+}
+
+// Hook to get menus with pagination
+export function useMenusPaginated(params: PaginationParams) {
+  return useQuery({
+    queryKey: menuQueryKeys.list(params),
+    queryFn: () => menuService.getMenus(params),
   });
 }
 

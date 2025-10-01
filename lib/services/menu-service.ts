@@ -1,9 +1,18 @@
-import { MenuData, MenuItem, CreateMenuInput, UpdateMenuInput } from "@/lib/types";
+import { MenuData, MenuItem, CreateMenuInput, UpdateMenuInput, PaginatedResponse, PaginationParams } from "@/lib/types";
 
 export const menuService = {
-  // Get all menus
-  async getMenus(): Promise<MenuItem[]> {
-    const response = await fetch("/api/menus");
+  // Get all menus with optional pagination
+  async getMenus(params?: PaginationParams): Promise<MenuItem[] | PaginatedResponse<MenuItem>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) {
+      searchParams.append("page", params.page.toString());
+    }
+    if (params?.limit) {
+      searchParams.append("limit", params.limit.toString());
+    }
+
+    const url = params?.limit ? `/api/menus?${searchParams}` : "/api/menus";
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error("Failed to fetch menus");
     }
