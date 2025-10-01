@@ -312,7 +312,19 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                       <Input type='number' step='0.1' value={ingredient.quantity} onChange={(e) => updateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
                     </div>
                     <div className='col-span-2'>
-                      <Input value={ingredient.unit} onChange={(e) => updateIngredient(ingredient.id, "unit", e.target.value)} className='border-primary' />
+                      <Select value={ingredient.unit} onValueChange={(value) => updateIngredient(ingredient.id, "unit", value)}>
+                        <SelectTrigger className='border-primary'>
+                          <SelectValue placeholder='単位を選択' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value='g'>g</SelectItem>
+                          <SelectItem value='ml'>ml</SelectItem>
+                          <SelectItem value='個'>個</SelectItem>
+                          <SelectItem value='袋'>袋</SelectItem>
+                          <SelectItem value='振り'>振り</SelectItem>
+                          <SelectItem value='枚'>枚</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className='col-span-2'>
                       <Input type='number' step='0.01' value={ingredient.unitPrice} onChange={(e) => updateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
