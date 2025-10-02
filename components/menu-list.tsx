@@ -14,6 +14,7 @@ import { useMenusPaginated, useDeleteMenu } from "@/hooks/use-menu-queries";
 import { categoryClientService } from "@/lib/services/category-client-service";
 import { Category, MenuItem, PaginatedResponse } from "@/lib/types";
 import { toast } from "sonner";
+import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
 
 interface MenuListProps {
   onEditMenu: (menuId: string | null) => void;
@@ -139,8 +140,8 @@ export function MenuList({ onEditMenu }: MenuListProps) {
         <div className='border-b-2 sm:border-b-4 border-primary bg-card p-4 sm:p-6'>
           <h1 className='text-2xl sm:text-3xl font-bold text-center text-foreground mb-4'>メニュー管理</h1>
 
-          {/* Search and Add Section */}
-          <div className='flex flex-col sm:flex-row gap-4 items-center'>
+          {/* Search and Add Section - Desktop Only */}
+          <div className='hidden sm:flex flex-col sm:flex-row gap-4 items-center'>
             <div className='relative flex-1 w-full sm:max-w-md'>
               <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4' />
               <Input placeholder='メニューを検索...' value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className='pl-10 border-2 border-primary' />
@@ -523,6 +524,17 @@ export function MenuList({ onEditMenu }: MenuListProps) {
           )}
         </div>
       </Card>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNavigation
+        onEditMenu={onEditMenu}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        categories={categories}
+        onCategoryCreated={(newCategory) => {
+          setCategories((prev) => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name, "ja")));
+        }}
+      />
     </div>
   );
 }

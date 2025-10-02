@@ -18,5 +18,5 @@ export default function Home() {
     setEditingMenuId(null);
   };
 
-  return <main className='min-h-screen bg-background py-8 px-4'>{currentView === "list" ? <MenuList onEditMenu={handleEditMenu} /> : <MenuControlSheet menuId={editingMenuId} onBack={handleBackToList} />}</main>;
+  return <main className='min-h-screen bg-background py-8 px-4 pb-20 sm:pb-8'>{currentView === "list" ? <MenuList onEditMenu={handleEditMenu} /> : <MenuControlSheet menuId={editingMenuId} onBack={handleBackToList} />}</main>;
 }
