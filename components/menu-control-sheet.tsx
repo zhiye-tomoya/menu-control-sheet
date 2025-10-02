@@ -17,6 +17,7 @@ import { useMenu, useSaveMenu } from "@/hooks/use-menu-queries";
 import { Ingredient, Category, Subcategory } from "@/lib/types";
 import { categoryClientService } from "@/lib/services/category-client-service";
 import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
+import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
 import { toast } from "sonner";
 
 interface MenuControlSheetProps {
@@ -408,7 +409,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
       <Card className='border-2 sm:border-4 border-primary bg-card'>
         <div className='border-b-2 sm:border-b-4 border-primary bg-card p-4 sm:p-6'>
           <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4'>
-            <Button onClick={onBack} variant='ghost' size='lg' className='text-primary hover:text-primary hover:bg-primary/10 self-start'>
+            <Button onClick={onBack} variant='ghost' size='lg' className='hidden sm:flex text-primary hover:text-primary hover:bg-primary/10 self-start'>
               <ArrowLeft className='h-4 w-4 mr-2' />
               メニュー一覧に戻る
             </Button>
@@ -818,44 +819,8 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
         </div>
       </Card>
 
-      {/* Fixed Action Buttons for Mobile */}
-      <div className='sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t-2 border-primary p-4 space-y-3 z-50'>
-        <div className='flex flex-col gap-3 max-w-7xl mx-auto'>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant='outline' size='lg' className='w-full border-2 border-primary hover:bg-muted bg-transparent py-3 text-base'>
-                <RotateCcw className='h-4 w-4 mr-2' />
-                リセット
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>すべてをリセットしますか？</AlertDialogTitle>
-                <AlertDialogDescription>すべての入力データが初期状態に戻ります。この操作は取り消すことができません。</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReset} className='bg-destructive text-white hover:bg-destructive/90'>
-                  リセット
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button onClick={handleSave} size='lg' className='w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground border-2 border-primary py-3 text-base' disabled={isSaving || isLoadingMenu}>
-            {isSaving ? (
-              <>
-                <Loader2 className='h-4 w-4 mr-2 animate-spin' />
-                保存中...
-              </>
-            ) : (
-              <>
-                <Save className='h-4 w-4 mr-2' />
-                保存
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+      {/* Mobile Bottom Navigation for Edit Mode */}
+      <MobileBottomNavigation isEditMode={true} onBack={onBack} onSave={handleSave} onReset={handleReset} isSaving={isSaving} isLoadingMenu={isLoadingMenu} onEditMenu={() => {}} searchTerm='' onSearchChange={() => {}} categories={categories} onCategoryCreated={() => {}} selectedCategoryId={null} onCategoryChange={() => {}} subcategories={subcategories} selectedSubcategoryId={null} onSubcategoryChange={() => {}} />
     </div>
   );
 }

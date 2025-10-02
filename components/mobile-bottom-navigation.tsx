@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FolderPlus, Search, Loader2, Filter } from "lucide-react";
+import { Plus, FolderPlus, Search, Loader2, Filter, ArrowLeft, Save, RotateCcw } from "lucide-react";
 import { categoryClientService } from "@/lib/services/category-client-service";
 import { Category, Subcategory } from "@/lib/types";
 import { toast } from "sonner";
@@ -22,9 +23,16 @@ interface MobileBottomNavigationProps {
   subcategories: Subcategory[];
   selectedSubcategoryId: string | null;
   onSubcategoryChange: (subcategoryId: string | null) => void;
+  // New props for edit mode
+  isEditMode?: boolean;
+  onBack?: () => void;
+  onSave?: () => void;
+  onReset?: () => void;
+  isSaving?: boolean;
+  isLoadingMenu?: boolean;
 }
 
-export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange, categories, onCategoryCreated, selectedCategoryId, onCategoryChange, subcategories, selectedSubcategoryId, onSubcategoryChange }: MobileBottomNavigationProps) {
+export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange, categories, onCategoryCreated, selectedCategoryId, onCategoryChange, subcategories, selectedSubcategoryId, onSubcategoryChange, isEditMode = false, onBack, onSave, onReset, isSaving, isLoadingMenu }: MobileBottomNavigationProps) {
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
@@ -179,31 +187,81 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
 
       {/* Mobile Bottom Navigation - Only visible on mobile screens */}
       <div className='fixed bottom-0 left-0 right-0 bg-background border-t-2 border-primary shadow-lg z-40 sm:hidden'>
-        <div className='flex items-center justify-around py-2'>
-          {/* Search Button */}
-          <Button variant='ghost' size='lg' onClick={() => setShowSearchOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
-            <Search className='h-5 w-5' />
-            <span className='text-xs font-medium'>検索</span>
-          </Button>
+        {isEditMode ? (
+          /* Edit Mode Navigation */
+          <div className='p-3'>
+            <div className='max-w-7xl mx-auto space-y-3'>
+              <div className='flex justify-center'>
+                <Button onClick={onBack} variant='ghost' size='lg' className='text-primary hover:text-primary hover:bg-primary/10 flex items-center gap-2 py-3 px-6'>
+                  <ArrowLeft className='h-5 w-5' />
+                  <span className='font-medium'>メニュー一覧に戻る</span>
+                </Button>
+              </div>
+              <div className='flex gap-3'>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant='outline' size='lg' className='flex-1 border-2 border-primary hover:bg-muted bg-transparent py-3 text-base'>
+                      <RotateCcw className='h-4 w-4 mr-2' />
+                      リセット
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>すべてをリセットしますか？</AlertDialogTitle>
+                      <AlertDialogDescription>すべての入力データが初期状態に戻ります。この操作は取り消すことができません。</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                      <AlertDialogAction onClick={onReset} className='bg-destructive text-white hover:bg-destructive/90'>
+                        リセット
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button onClick={onSave} size='lg' className='flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground border-2 border-primary py-3 text-base' disabled={isSaving || isLoadingMenu}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className='h-4 w-4 mr-2' />
+                      保存
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* List Mode Navigation */
+          <div className='flex items-center justify-around py-2'>
+            {/* Search Button */}
+            <Button variant='ghost' size='lg' onClick={() => setShowSearchOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
+              <Search className='h-5 w-5' />
+              <span className='text-xs font-medium'>検索</span>
+            </Button>
 
-          {/* Category Filter Button */}
-          <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
-            <Filter className='h-5 w-5' />
-            <span className='text-xs font-medium'>カテゴリ</span>
-          </Button>
+            {/* Category Filter Button */}
+            <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
+              <Filter className='h-5 w-5' />
+              <span className='text-xs font-medium'>カテゴリ</span>
+            </Button>
 
-          {/* Subcategory Filter Button */}
-          <Button variant='ghost' size='lg' onClick={() => setShowSubcategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
-            <Filter className='h-5 w-5' />
-            <span className='text-xs font-medium'>サブ</span>
-          </Button>
+            {/* Subcategory Filter Button */}
+            <Button variant='ghost' size='lg' onClick={() => setShowSubcategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
+              <Filter className='h-5 w-5' />
+              <span className='text-xs font-medium'>サブ</span>
+            </Button>
 
-          {/* Create New Menu Button - Primary Action */}
-          <Button onClick={() => onEditMenu(null)} size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground border border-primary'>
-            <Plus className='h-5 w-5' />
-            <span className='text-xs font-medium'>新規作成</span>
-          </Button>
-        </div>
+            {/* Create New Menu Button - Primary Action */}
+            <Button onClick={() => onEditMenu(null)} size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground border border-primary'>
+              <Plus className='h-5 w-5' />
+              <span className='text-xs font-medium'>新規作成</span>
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );
