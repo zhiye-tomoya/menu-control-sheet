@@ -567,6 +567,8 @@ export function MenuList({ onEditMenu }: MenuListProps) {
         onCategoryCreated={(newCategory) => {
           setCategories((prev) => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name, "ja")));
         }}
+        selectedCategoryId={selectedCategoryId}
+        onCategoryChange={setSelectedCategoryId}
       />
     </div>
   );
