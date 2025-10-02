@@ -309,7 +309,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                       <Input value={ingredient.name} onChange={(e) => updateIngredient(ingredient.id, "name", e.target.value)} className='border-primary' />
                     </div>
                     <div className='col-span-2'>
-                      <Input type='number' step='0.1' value={ingredient.quantity} onChange={(e) => updateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
+                      <Input type='number' step='1' value={ingredient.quantity} onChange={(e) => updateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
                     </div>
                     <div className='col-span-2'>
                       <Select value={ingredient.unit} onValueChange={(value) => updateIngredient(ingredient.id, "unit", value)}>
@@ -327,7 +327,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                       </Select>
                     </div>
                     <div className='col-span-2'>
-                      <Input type='number' step='0.01' value={ingredient.unitPrice} onChange={(e) => updateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
+                      <Input type='number' step='1' value={ingredient.unitPrice} onChange={(e) => updateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
                     </div>
                     <div className='col-span-1 text-right font-medium'>¥{ingredient.totalPrice.toFixed(1)}</div>
                     <div className='col-span-1 flex justify-center'>
@@ -364,7 +364,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                 <div className='grid grid-cols-12 gap-2 mt-4 bg-muted border-2 border-primary p-3'>
                   <div className='col-span-8 font-bold text-right'>使用原価合計</div>
                   <div className='col-span-2 font-bold'>原価合計</div>
-                  <div className='col-span-2 text-right font-bold text-lg'>¥{totalCost.toFixed(1)}</div>
+                  <div className='col-span-2 text-right font-bold text-lg'>¥{totalCost.toFixed(0)}</div>
                 </div>
               </div>
             </div>
@@ -377,7 +377,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                 <label className='text-sm font-bold text-foreground mb-2 block'>販売価格(税別)</label>
                 <div className='flex items-center gap-2'>
                   <span className='text-xl sm:text-2xl font-bold'>¥</span>
-                  <Input type='number' value={sellingPrice} onChange={(e) => setSellingPrice(Number.parseFloat(e.target.value) || 0)} className='text-xl sm:text-2xl font-bold border-2 border-primary' />
+                  <Input type='number' step='1' value={sellingPrice} onChange={(e) => setSellingPrice(Number.parseInt(e.target.value) || 0)} className='text-xl sm:text-2xl font-bold border-2 border-primary' />
                 </div>
               </Card>
 

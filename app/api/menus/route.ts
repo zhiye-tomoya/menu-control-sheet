@@ -123,9 +123,9 @@ export async function POST(request: Request) {
         imageUrl: input.imageUrl || "",
         categoryId: input.categoryId,
         ingredients: input.ingredients,
-        sellingPrice: input.sellingPrice.toString(),
-        totalCost: totalCost.toString(),
-        costRate: costRate.toString(),
+        sellingPrice: input.sellingPrice.toFixed(2),
+        totalCost: totalCost.toFixed(2),
+        costRate: costRate.toFixed(2),
         createdAt: new Date(),
         updatedAt: new Date(),
       };

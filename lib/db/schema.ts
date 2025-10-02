@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, decimal, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, jsonb, decimal } from "drizzle-orm/pg-core";
 
 export const categories = pgTable("categories", {
   id: text("id").primaryKey(),
@@ -16,9 +16,9 @@ export const menus = pgTable("menus", {
     .notNull()
     .references(() => categories.id),
   ingredients: jsonb("ingredients").notNull(),
-  sellingPrice: decimal("selling_price").notNull(),
-  totalCost: decimal("total_cost").notNull(),
-  costRate: decimal("cost_rate").notNull(),
+  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(),
+  costRate: decimal("cost_rate", { precision: 5, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
