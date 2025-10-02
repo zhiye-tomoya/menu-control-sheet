@@ -30,6 +30,11 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string>("");
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryDescription, setEditCategoryDescription] = useState("");
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
 
   // Per-subcategory pagination state - key is subcategoryId, value is current page
   const [subcategoryPages, setSubcategoryPages] = useState<Record<string, number>>({});
@@ -150,6 +155,48 @@ export function MenuList({ onEditMenu }: MenuListProps) {
     }
   };
 
+  const handleEditCategory = async () => {
+    if (!editCategoryName.trim()) {
+      toast.error("カテゴリ名を入力してください");
+      return;
+    }
+
+    if (!editingCategoryId) {
+      toast.error("編集するカテゴリが選択されていません");
+      return;
+    }
+
+    setIsEditingCategory(true);
+
+    try {
+      const updatedCategory = await categoryClientService.updateCategory({
+        id: editingCategoryId,
+        name: editCategoryName.trim(),
+        description: editCategoryDescription.trim(),
+      });
+
+      setCategories((prev) => prev.map((cat) => (cat.id === editingCategoryId ? updatedCategory : cat)).sort((a, b) => a.name.localeCompare(b.name, "ja")));
+
+      toast.success("カテゴリを更新しました");
+      setIsEditCategoryOpen(false);
+      setEditingCategoryId("");
+      setEditCategoryName("");
+      setEditCategoryDescription("");
+    } catch (error) {
+      console.error("Failed to update category:", error);
+      toast.error("カテゴリの更新に失敗しました");
+    } finally {
+      setIsEditingCategory(false);
+    }
+  };
+
+  const openEditCategoryDialog = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setEditCategoryName(category.name);
+    setEditCategoryDescription(category.description || "");
+    setIsEditCategoryOpen(true);
+  };
+
   return (
     <div className='max-w-7xl mx-auto px-2 sm:px-4'>
       <Card className='border-2 sm:border-4 border-primary bg-card'>
@@ -163,9 +210,14 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                 すべて
               </Button>
               {categories.map((category) => (
-                <Button key={category.id} variant={selectedCategoryId === category.id ? "default" : "outline"} size='sm' onClick={() => setSelectedCategoryId(category.id)} className={selectedCategoryId === category.id ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}>
-                  {category.name}
-                </Button>
+                <div key={category.id} className='flex items-center gap-1'>
+                  <Button variant={selectedCategoryId === category.id ? "default" : "outline"} size='sm' onClick={() => setSelectedCategoryId(category.id)} className={selectedCategoryId === category.id ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}>
+                    {category.name}
+                  </Button>
+                  <Button variant='ghost' size='sm' onClick={() => openEditCategoryDialog(category)} className='h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted' title={`${category.name}を編集`}>
+                    <Edit className='h-3 w-3' />
+                  </Button>
+                </div>
               ))}
             </div>
           </div>
@@ -570,6 +622,53 @@ export function MenuList({ onEditMenu }: MenuListProps) {
         selectedCategoryId={selectedCategoryId}
         onCategoryChange={setSelectedCategoryId}
       />
+
+      {/* Category Edit Dialog */}
+      <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>カテゴリを編集</DialogTitle>
+            <DialogDescription>選択されたカテゴリの情報を編集します。</DialogDescription>
+          </DialogHeader>
+          <div className='grid gap-4 py-4'>
+            <div className='grid gap-2'>
+              <Label htmlFor='edit-category-name'>カテゴリ名 *</Label>
+              <Input id='edit-category-name' placeholder='カテゴリ名を入力...' value={editCategoryName} onChange={(e) => setEditCategoryName(e.target.value)} className='border-2 border-primary' />
+            </div>
+            <div className='grid gap-2'>
+              <Label htmlFor='edit-category-description'>説明（任意）</Label>
+              <Textarea id='edit-category-description' placeholder='カテゴリの説明を入力...' value={editCategoryDescription} onChange={(e) => setEditCategoryDescription(e.target.value)} className='border-2 border-primary resize-none' rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => {
+                setIsEditCategoryOpen(false);
+                setEditingCategoryId("");
+                setEditCategoryName("");
+                setEditCategoryDescription("");
+              }}
+              disabled={isEditingCategory}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleEditCategory} disabled={!editCategoryName.trim() || isEditingCategory} className='bg-primary hover:bg-primary/90'>
+              {isEditingCategory ? (
+                <>
+                  <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                  更新中...
+                </>
+              ) : (
+                <>
+                  <Edit className='h-4 w-4 mr-2' />
+                  更新
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

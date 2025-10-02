@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Upload, RotateCcw, ArrowLeft, Save, Loader2, FolderPlus } from "lucide-react";
+import { Plus, Trash2, Upload, RotateCcw, ArrowLeft, Save, Loader2, FolderPlus, Edit } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,15 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
   const [newSubcategoryName, setNewSubcategoryName] = useState("");
   const [newSubcategoryDescription, setNewSubcategoryDescription] = useState("");
   const [isCreatingSubcategory, setIsCreatingSubcategory] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string>("");
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryDescription, setEditCategoryDescription] = useState("");
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([
     {
       id: "1",
@@ -321,6 +330,76 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     }
   };
 
+  const handleEditCategory = async () => {
+    if (!editCategoryName.trim()) {
+      toast.error("カテゴリ名を入力してください");
+      return;
+    }
+
+    if (!editingCategoryId) {
+      toast.error("編集するカテゴリが選択されていません");
+      return;
+    }
+
+    setIsEditingCategory(true);
+
+    try {
+      const updatedCategory = await categoryClientService.updateCategory({
+        id: editingCategoryId,
+        name: editCategoryName.trim(),
+        description: editCategoryDescription.trim(),
+      });
+
+      setCategories((prev) => prev.map((cat) => (cat.id === editingCategoryId ? updatedCategory : cat)).sort((a, b) => a.name.localeCompare(b.name, "ja")));
+
+      toast.success("カテゴリを更新しました");
+      setIsEditCategoryOpen(false);
+      setEditingCategoryId("");
+      setEditCategoryName("");
+      setEditCategoryDescription("");
+    } catch (error) {
+      console.error("Failed to update category:", error);
+      toast.error("カテゴリの更新に失敗しました");
+    } finally {
+      setIsEditingCategory(false);
+    }
+  };
+
+  const openEditCategoryDialog = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setEditCategoryName(category.name);
+    setEditCategoryDescription(category.description || "");
+    setIsEditCategoryOpen(true);
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("カテゴリ名を入力してください");
+      return;
+    }
+
+    setIsCreatingCategory(true);
+
+    try {
+      const newCategory = await categoryClientService.createCategory({
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim(),
+      });
+
+      setCategories((prev) => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name, "ja")));
+      setCategoryId(newCategory.id); // Select the newly created category
+      toast.success("カテゴリを作成しました");
+      setIsCreateCategoryOpen(false);
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      toast.error("カテゴリの作成に失敗しました");
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
   return (
     <div className='max-w-7xl mx-auto px-2 sm:px-4'>
       <Card className='border-2 sm:border-4 border-primary bg-card'>
@@ -352,18 +431,71 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
               <label className='text-base sm:text-lg font-bold text-foreground'>カテゴリ</label>
             </div>
             <div className='col-span-3 p-3 sm:p-4'>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className='text-base sm:text-lg font-medium border-2 border-primary bg-card'>
-                  <SelectValue placeholder='カテゴリを選択してください' />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className='flex gap-2'>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className='text-base sm:text-lg font-medium border-2 border-primary bg-card flex-1'>
+                    <SelectValue placeholder='カテゴリを選択してください' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Dialog open={isCreateCategoryOpen} onOpenChange={setIsCreateCategoryOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent'>
+                      <FolderPlus className='h-4 w-4 mr-1 sm:mr-2' />
+                      <span className='hidden sm:inline'>カテゴリを作成</span>
+                      <span className='sm:hidden'>作成</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className='sm:max-w-md'>
+                    <DialogHeader>
+                      <DialogTitle>新しいカテゴリを作成</DialogTitle>
+                      <DialogDescription>新しいカテゴリを作成してメニューを整理しましょう。</DialogDescription>
+                    </DialogHeader>
+                    <div className='grid gap-4 py-4'>
+                      <div className='grid gap-2'>
+                        <Label htmlFor='category-name'>カテゴリ名 *</Label>
+                        <Input id='category-name' placeholder='カテゴリ名を入力...' value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className='border-2 border-primary' />
+                      </div>
+                      <div className='grid gap-2'>
+                        <Label htmlFor='category-description'>説明（任意）</Label>
+                        <Textarea id='category-description' placeholder='カテゴリの説明を入力...' value={newCategoryDescription} onChange={(e) => setNewCategoryDescription(e.target.value)} className='border-2 border-primary resize-none' rows={3} />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant='outline'
+                        onClick={() => {
+                          setIsCreateCategoryOpen(false);
+                          setNewCategoryName("");
+                          setNewCategoryDescription("");
+                        }}
+                        disabled={isCreatingCategory}
+                      >
+                        キャンセル
+                      </Button>
+                      <Button onClick={handleCreateCategory} disabled={!newCategoryName.trim() || isCreatingCategory} className='bg-primary hover:bg-primary/90'>
+                        {isCreatingCategory ? (
+                          <>
+                            <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                            作成中...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className='h-4 w-4 mr-2' />
+                            作成
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
 
