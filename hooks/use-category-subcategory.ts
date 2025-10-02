@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Category, Subcategory } from "@/lib/types";
 import { categoryClientService } from "@/lib/services/category-client-service";
 import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface UseCategorySubcategoryReturn {
   // State
@@ -63,7 +63,10 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
         }
       } catch (error) {
         console.error("Failed to load categories:", error);
-        toast.error("カテゴリの読み込みに失敗しました");
+        toast.error({
+          title: "カテゴリの読み込みに失敗しました",
+          description: "再度お試しください。",
+        });
       } finally {
         setIsLoadingCategories(false);
       }
@@ -101,7 +104,10 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
         }
       } catch (error) {
         console.error("Failed to load subcategories:", error);
-        toast.error("サブカテゴリの読み込みに失敗しました");
+        toast.error({
+          title: "サブカテゴリの読み込みに失敗しました",
+          description: "再度お試しください。",
+        });
       } finally {
         setIsLoadingSubcategories(false);
       }
@@ -116,10 +122,16 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
       const newCategory = await categoryClientService.createCategory(data);
       setCategories((prev) => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name, "ja")));
       setCategoryId(newCategory.id); // Select the newly created category
-      toast.success("カテゴリを作成しました");
+      toast.success({
+        title: "カテゴリを作成しました",
+        description: `「${data.name}」が正常に作成されました。`,
+      });
     } catch (error) {
       console.error("Failed to create category:", error);
-      toast.error("カテゴリの作成に失敗しました");
+      toast.error({
+        title: "カテゴリの作成に失敗しました",
+        description: "再度お試しください。",
+      });
       throw error;
     }
   };
@@ -128,10 +140,16 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
     try {
       const updatedCategory = await categoryClientService.updateCategory({ id, ...data });
       setCategories((prev) => prev.map((cat) => (cat.id === id ? updatedCategory : cat)).sort((a, b) => a.name.localeCompare(b.name, "ja")));
-      toast.success("カテゴリを更新しました");
+      toast.success({
+        title: "カテゴリを更新しました",
+        description: `「${data.name}」が正常に更新されました。`,
+      });
     } catch (error) {
       console.error("Failed to update category:", error);
-      toast.error("カテゴリの更新に失敗しました");
+      toast.error({
+        title: "カテゴリの更新に失敗しました",
+        description: "再度お試しください。",
+      });
       throw error;
     }
   };
@@ -142,10 +160,16 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
       const newSubcategory = await subcategoryClientService.createSubcategory(data);
       setSubcategories((prev) => [...prev, newSubcategory].sort((a, b) => a.name.localeCompare(b.name, "ja")));
       setSubcategoryId(newSubcategory.id);
-      toast.success("サブカテゴリを作成しました");
+      toast.success({
+        title: "サブカテゴリを作成しました",
+        description: `「${data.name}」が正常に作成されました。`,
+      });
     } catch (error) {
       console.error("Failed to create subcategory:", error);
-      toast.error("サブカテゴリの作成に失敗しました");
+      toast.error({
+        title: "サブカテゴリの作成に失敗しました",
+        description: "再度お試しください。",
+      });
       throw error;
     }
   };
@@ -154,10 +178,16 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
     try {
       const updatedSubcategory = await subcategoryClientService.updateSubcategory({ id, ...data });
       setSubcategories((prev) => prev.map((sub) => (sub.id === id ? updatedSubcategory : sub)).sort((a, b) => a.name.localeCompare(b.name, "ja")));
-      toast.success("サブカテゴリを更新しました");
+      toast.success({
+        title: "サブカテゴリを更新しました",
+        description: `「${data.name}」が正常に更新されました。`,
+      });
     } catch (error) {
       console.error("Failed to update subcategory:", error);
-      toast.error("サブカテゴリの更新に失敗しました");
+      toast.error({
+        title: "サブカテゴリの更新に失敗しました",
+        description: "再度お試しください。",
+      });
       throw error;
     }
   };

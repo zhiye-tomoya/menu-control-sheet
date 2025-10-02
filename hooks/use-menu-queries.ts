@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { menuService } from "@/lib/services/menu-service";
 import { CreateMenuInput, UpdateMenuInput, PaginationParams, MenuItem, PaginatedResponse } from "@/lib/types";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 // Query keys for consistent caching
 export const menuQueryKeys = {
@@ -48,13 +48,15 @@ export function useCreateMenu() {
       queryClient.invalidateQueries({ queryKey: menuQueryKeys.lists() });
 
       // Show success toast
-      toast.success("メニューを作成しました", {
+      toast.success({
+        title: "メニューを作成しました",
         description: `「${data.name}」が正常に保存されました。`,
       });
     },
     onError: (error: any) => {
       // Show error toast
-      toast.error("メニューの作成に失敗しました", {
+      toast.error({
+        title: "メニューの作成に失敗しました",
         description: error?.message || "不明なエラーが発生しました。もう一度お試しください。",
       });
     },
@@ -79,13 +81,15 @@ export function useUpdateMenu() {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
 
       // Show success toast
-      toast.success("メニューを更新しました", {
+      toast.success({
+        title: "メニューを更新しました",
         description: `「${updatedMenu.name}」の変更が保存されました。`,
       });
     },
     onError: (error: any) => {
       // Show error toast
-      toast.error("メニューの更新に失敗しました", {
+      toast.error({
+        title: "メニューの更新に失敗しました",
         description: error?.message || "不明なエラーが発生しました。もう一度お試しください。",
       });
     },
@@ -113,13 +117,15 @@ export function useDeleteMenu() {
       queryClient.removeQueries({ queryKey: menuQueryKeys.detail(deletedId) });
 
       // Show success toast
-      toast.success("メニューを削除しました", {
+      toast.success({
+        title: "メニューを削除しました",
         description: `「${menuName}」が正常に削除されました。`,
       });
     },
     onError: (error: any) => {
       // Show error toast
-      toast.error("メニューの削除に失敗しました", {
+      toast.error({
+        title: "メニューの削除に失敗しました",
         description: error?.message || "不明なエラーが発生しました。もう一度お試しください。",
       });
     },

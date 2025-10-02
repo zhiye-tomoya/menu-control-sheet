@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Ingredient } from "@/lib/types";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { useSaveMenu, useMenu } from "@/hooks/use-menu-queries";
 import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
 
@@ -73,21 +73,24 @@ export function useMenuForm({ menuId, ingredients, subcategoryId, onBack }: UseM
   // Form validation
   const validateForm = (): boolean => {
     if (!productName.trim()) {
-      toast.error("商品名を入力してください", {
+      toast.error({
+        title: "商品名を入力してください",
         description: "商品名は必須項目です。",
       });
       return false;
     }
 
     if (sellingPrice <= 0) {
-      toast.error("販売価格を正しく入力してください", {
+      toast.error({
+        title: "販売価格を正しく入力してください",
         description: "販売価格は0円より大きい値を入力してください。",
       });
       return false;
     }
 
     if (ingredients.length === 0) {
-      toast.error("材料を追加してください", {
+      toast.error({
+        title: "材料を追加してください",
         description: "少なくとも1つの材料を追加する必要があります。",
       });
       return false;
@@ -96,14 +99,16 @@ export function useMenuForm({ menuId, ingredients, subcategoryId, onBack }: UseM
     // Check if all ingredients have names
     const emptyIngredients = ingredients.filter((ing) => !ing.name.trim());
     if (emptyIngredients.length > 0) {
-      toast.error("材料名を入力してください", {
+      toast.error({
+        title: "材料名を入力してください",
         description: "すべての材料に名前を入力してください。",
       });
       return false;
     }
 
     if (!subcategoryId) {
-      toast.error("サブカテゴリを選択してください", {
+      toast.error({
+        title: "サブカテゴリを選択してください",
         description: "サブカテゴリは必須項目です。",
       });
       return false;
