@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -229,17 +230,17 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     <div className='max-w-7xl mx-auto px-2 sm:px-4'>
       <Card className='border-2 sm:border-4 border-primary bg-card'>
         <div className='border-b-2 sm:border-b-4 border-primary bg-card p-4 sm:p-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <Button onClick={onBack} variant='ghost' size='lg' className='text-primary hover:text-primary hover:bg-primary/10'>
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4'>
+            <Button onClick={onBack} variant='ghost' size='lg' className='text-primary hover:text-primary hover:bg-primary/10 self-start'>
               <ArrowLeft className='h-4 w-4 mr-2' />
               メニュー一覧に戻る
             </Button>
-            <h1 className='text-xl sm:text-2xl lg:text-3xl font-bold text-foreground'>{menuId ? "原価計算表 - 編集" : "原価計算表 - 新規作成"}</h1>
-            <div className='w-32'></div> {/* Spacer for center alignment */}
+            <h1 className='text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-foreground text-center sm:text-left'>{menuId ? "原価計算表 - 編集" : "原価計算表 - 新規作成"}</h1>
+            <div className='hidden sm:block sm:w-32'></div> {/* Spacer for center alignment on larger screens */}
           </div>
         </div>
 
-        <div className='p-4 sm:p-6 space-y-4 sm:space-y-6'>
+        <div className='p-4 sm:p-6 space-y-4 sm:space-y-6 pb-24 sm:pb-6'>
           {/* Product Name Section */}
           <div className='grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4 border-2 sm:border-4 border-primary bg-muted/30'>
             <div className='bg-muted md:border-r-4 border-primary p-3 sm:p-4 flex items-center'>
@@ -289,82 +290,163 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
             </div>
 
             {/* Ingredients Table */}
-            <div className='lg:col-span-8 p-4 lg:p-6 overflow-x-auto'>
-              <div className='min-w-[320px] lg:min-w-[600px]'>
-                {/* Table Header */}
-                <div className='grid grid-cols-12 gap-2 mb-2 bg-muted border-2 border-primary p-2 font-bold text-sm'>
-                  <div className='col-span-1 text-center'>材料No</div>
-                  <div className='col-span-3'>材料名</div>
-                  <div className='col-span-2 text-right'>使用量</div>
-                  <div className='col-span-2'>単位</div>
-                  <div className='col-span-2 text-right'>材料単価(税別)</div>
-                  <div className='col-span-2 text-right'>原価(税別)</div>
+            <div className='lg:col-span-8 p-4 lg:p-6'>
+              <div className='space-y-3'>
+                {/* Desktop Table View */}
+                <div className='hidden sm:block overflow-x-auto'>
+                  <div className='min-w-[600px]'>
+                    {/* Table Header */}
+                    <div className='grid grid-cols-12 gap-2 mb-2 bg-muted border-2 border-primary p-2 font-bold text-sm'>
+                      <div className='col-span-1 text-center'>材料No</div>
+                      <div className='col-span-3'>材料名</div>
+                      <div className='col-span-2 text-right'>使用量</div>
+                      <div className='col-span-2'>単位</div>
+                      <div className='col-span-2 text-right'>材料単価(税別)</div>
+                      <div className='col-span-2 text-right'>原価(税別)</div>
+                    </div>
+
+                    {/* Table Rows */}
+                    {ingredients.map((ingredient) => (
+                      <div key={ingredient.id} className='grid grid-cols-12 gap-2 mb-2 items-center border-2 border-primary p-2 bg-card'>
+                        <div className='col-span-1 text-center font-medium'>{ingredient.no}</div>
+                        <div className='col-span-3'>
+                          <Input value={ingredient.name} onChange={(e) => updateIngredient(ingredient.id, "name", e.target.value)} className='border-primary' />
+                        </div>
+                        <div className='col-span-2'>
+                          <Input type='number' step='1' value={ingredient.quantity} onChange={(e) => updateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
+                        </div>
+                        <div className='col-span-2'>
+                          <Select value={ingredient.unit} onValueChange={(value) => updateIngredient(ingredient.id, "unit", value)}>
+                            <SelectTrigger className='border-primary'>
+                              <SelectValue placeholder='単位を選択' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value='g'>g</SelectItem>
+                              <SelectItem value='ml'>ml</SelectItem>
+                              <SelectItem value='個'>個</SelectItem>
+                              <SelectItem value='袋'>袋</SelectItem>
+                              <SelectItem value='振り'>振り</SelectItem>
+                              <SelectItem value='枚'>枚</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className='col-span-2'>
+                          <Input type='number' step='1' value={ingredient.unitPrice} onChange={(e) => updateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
+                        </div>
+                        <div className='col-span-1 text-right font-medium'>¥{ingredient.totalPrice.toFixed(1)}</div>
+                        <div className='col-span-1 flex justify-center'>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant='ghost' size='icon' className='h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10'>
+                                <Trash2 className='h-4 w-4' />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>材料を削除しますか？</AlertDialogTitle>
+                                <AlertDialogDescription>「{ingredient.name || "無名の材料"}」を削除します。この操作は取り消すことができません。</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => removeIngredient(ingredient.id)} className='bg-destructive text-white hover:bg-destructive/90'>
+                                  削除
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Table Rows */}
-                {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className='grid grid-cols-12 gap-2 mb-2 items-center border-2 border-primary p-2 bg-card'>
-                    <div className='col-span-1 text-center font-medium'>{ingredient.no}</div>
-                    <div className='col-span-3'>
-                      <Input value={ingredient.name} onChange={(e) => updateIngredient(ingredient.id, "name", e.target.value)} className='border-primary' />
-                    </div>
-                    <div className='col-span-2'>
-                      <Input type='number' step='1' value={ingredient.quantity} onChange={(e) => updateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
-                    </div>
-                    <div className='col-span-2'>
-                      <Select value={ingredient.unit} onValueChange={(value) => updateIngredient(ingredient.id, "unit", value)}>
-                        <SelectTrigger className='border-primary'>
-                          <SelectValue placeholder='単位を選択' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value='g'>g</SelectItem>
-                          <SelectItem value='ml'>ml</SelectItem>
-                          <SelectItem value='個'>個</SelectItem>
-                          <SelectItem value='袋'>袋</SelectItem>
-                          <SelectItem value='振り'>振り</SelectItem>
-                          <SelectItem value='枚'>枚</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className='col-span-2'>
-                      <Input type='number' step='1' value={ingredient.unitPrice} onChange={(e) => updateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
-                    </div>
-                    <div className='col-span-1 text-right font-medium'>¥{ingredient.totalPrice.toFixed(1)}</div>
-                    <div className='col-span-1 flex justify-center'>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant='ghost' size='icon' className='h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10'>
-                            <Trash2 className='h-4 w-4' />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>材料を削除しますか？</AlertDialogTitle>
-                            <AlertDialogDescription>「{ingredient.name || "無名の材料"}」を削除します。この操作は取り消すことができません。</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => removeIngredient(ingredient.id)} className='bg-destructive text-white hover:bg-destructive/90'>
-                              削除
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))}
+                {/* Mobile Card View */}
+                <div className='sm:hidden space-y-3'>
+                  {ingredients.map((ingredient) => (
+                    <Card key={ingredient.id} className='border-2 border-primary p-4 bg-card'>
+                      <div className='flex items-center justify-between mb-3'>
+                        <div className='flex items-center gap-2'>
+                          <span className='bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>{ingredient.no}</span>
+                          <span className='font-medium text-sm text-muted-foreground'>材料 #{ingredient.no}</span>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant='ghost' size='icon' className='h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10'>
+                              <Trash2 className='h-4 w-4' />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>材料を削除しますか？</AlertDialogTitle>
+                              <AlertDialogDescription>「{ingredient.name || "無名の材料"}」を削除します。この操作は取り消すことができません。</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => removeIngredient(ingredient.id)} className='bg-destructive text-white hover:bg-destructive/90'>
+                                削除
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+
+                      <div className='space-y-3'>
+                        <div>
+                          <label className='text-sm font-medium text-muted-foreground mb-1 block'>材料名</label>
+                          <Input value={ingredient.name} onChange={(e) => updateIngredient(ingredient.id, "name", e.target.value)} className='border-primary text-base' placeholder='材料名を入力' />
+                        </div>
+
+                        <div className='grid grid-cols-2 gap-3'>
+                          <div>
+                            <label className='text-sm font-medium text-muted-foreground mb-1 block'>使用量</label>
+                            <Input type='number' step='1' value={ingredient.quantity} onChange={(e) => updateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary text-base' />
+                          </div>
+                          <div>
+                            <label className='text-sm font-medium text-muted-foreground mb-1 block'>単位</label>
+                            <Select value={ingredient.unit} onValueChange={(value) => updateIngredient(ingredient.id, "unit", value)}>
+                              <SelectTrigger className='border-primary text-base'>
+                                <SelectValue placeholder='単位を選択' />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value='g'>g</SelectItem>
+                                <SelectItem value='ml'>ml</SelectItem>
+                                <SelectItem value='個'>個</SelectItem>
+                                <SelectItem value='袋'>袋</SelectItem>
+                                <SelectItem value='振り'>振り</SelectItem>
+                                <SelectItem value='枚'>枚</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className='text-sm font-medium text-muted-foreground mb-1 block'>材料単価(税別)</label>
+                          <Input type='number' step='1' value={ingredient.unitPrice} onChange={(e) => updateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary text-base' />
+                        </div>
+
+                        <div className='bg-muted/50 rounded-lg p-3 border border-primary/20'>
+                          <div className='flex justify-between items-center'>
+                            <span className='text-sm font-medium text-muted-foreground'>原価(税別)</span>
+                            <span className='text-lg font-bold text-primary'>¥{ingredient.totalPrice.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
 
                 {/* Add Button */}
-                <Button onClick={addIngredient} variant='outline' className='w-full mt-2 border-2 border-primary hover:bg-muted bg-transparent'>
-                  <Plus className='h-4 w-4 mr-2' />
+                <Button onClick={addIngredient} variant='outline' className='w-full border-2 border-primary hover:bg-muted bg-transparent text-base py-6'>
+                  <Plus className='h-5 w-5 mr-2' />
                   材料を追加
                 </Button>
 
                 {/* Total Row */}
-                <div className='grid grid-cols-12 gap-2 mt-4 bg-muted border-2 border-primary p-3'>
-                  <div className='col-span-8 font-bold text-right'>使用原価合計</div>
-                  <div className='col-span-2 font-bold'>原価合計</div>
-                  <div className='col-span-2 text-right font-bold text-lg'>¥{totalCost.toFixed(0)}</div>
+                <div className='bg-muted border-2 border-primary p-4 rounded-lg'>
+                  <div className='flex justify-between items-center'>
+                    <span className='font-bold text-base sm:text-lg'>使用原価合計</span>
+                    <span className='text-xl sm:text-2xl font-bold text-primary'>¥{totalCost.toFixed(0)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -372,32 +454,32 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
 
           {/* Pricing Section */}
           <div className='border-2 sm:border-4 border-primary bg-card'>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-6'>
-              <Card className='border-2 border-primary bg-muted/30 p-3 sm:p-4'>
-                <label className='text-sm font-bold text-foreground mb-2 block'>販売価格(税別)</label>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-6'>
+              <Card className='border-2 border-primary bg-muted/30 p-4'>
+                <label className='text-sm font-bold text-foreground mb-3 block'>販売価格(税別)</label>
                 <div className='flex items-center gap-2'>
                   <span className='text-xl sm:text-2xl font-bold'>¥</span>
-                  <Input type='number' step='1' value={sellingPrice} onChange={(e) => setSellingPrice(Number.parseInt(e.target.value) || 0)} className='text-xl sm:text-2xl font-bold border-2 border-primary' />
+                  <Input type='number' step='1' value={sellingPrice} onChange={(e) => setSellingPrice(Number.parseInt(e.target.value) || 0)} className='text-xl sm:text-2xl font-bold border-2 border-primary min-h-[48px]' />
                 </div>
               </Card>
 
-              <Card className='border-2 border-primary bg-muted/30 p-3 sm:p-4'>
-                <label className='text-sm font-bold text-foreground mb-2 block'>原価率</label>
-                <div className='text-2xl sm:text-3xl font-bold text-foreground'>{costRate.toFixed(1)}%</div>
+              <Card className='border-2 border-primary bg-muted/30 p-4'>
+                <label className='text-sm font-bold text-foreground mb-3 block'>原価率</label>
+                <div className='text-2xl sm:text-3xl font-bold text-foreground flex items-center min-h-[48px]'>{costRate.toFixed(1)}%</div>
               </Card>
 
-              <Card className='border-2 border-primary bg-muted/30 p-3 sm:p-4'>
-                <label className='text-sm font-bold text-foreground mb-2 block'>安売価格</label>
-                <div className='text-2xl sm:text-3xl font-bold text-foreground'>¥{discountPrice}</div>
+              <Card className='border-2 border-primary bg-muted/30 p-4 sm:col-span-2 lg:col-span-1'>
+                <label className='text-sm font-bold text-foreground mb-3 block'>安売価格</label>
+                <div className='text-2xl sm:text-3xl font-bold text-foreground flex items-center min-h-[48px]'>¥{discountPrice}</div>
               </Card>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className='flex flex-col sm:flex-row gap-4 justify-end'>
+          {/* Action Buttons - Hidden on mobile, visible on desktop */}
+          <div className='hidden sm:flex sm:flex-row gap-3 sm:gap-4'>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent'>
+                <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent py-3 text-base'>
                   <RotateCcw className='h-4 w-4 mr-2' />
                   リセット
                 </Button>
@@ -415,7 +497,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button onClick={handleSave} size='lg' className='bg-secondary hover:bg-secondary/90 text-secondary-foreground border-2 border-primary' disabled={isSaving || isLoadingMenu}>
+            <Button onClick={handleSave} size='lg' className='bg-secondary hover:bg-secondary/90 text-secondary-foreground border-2 border-primary py-3 text-base sm:ml-auto' disabled={isSaving || isLoadingMenu}>
               {isSaving ? (
                 <>
                   <Loader2 className='h-4 w-4 mr-2 animate-spin' />
@@ -431,6 +513,45 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
           </div>
         </div>
       </Card>
+
+      {/* Fixed Action Buttons for Mobile */}
+      <div className='sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t-2 border-primary p-4 space-y-3 z-50'>
+        <div className='flex flex-col gap-3 max-w-7xl mx-auto'>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant='outline' size='lg' className='w-full border-2 border-primary hover:bg-muted bg-transparent py-3 text-base'>
+                <RotateCcw className='h-4 w-4 mr-2' />
+                リセット
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>すべてをリセットしますか？</AlertDialogTitle>
+                <AlertDialogDescription>すべての入力データが初期状態に戻ります。この操作は取り消すことができません。</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReset} className='bg-destructive text-white hover:bg-destructive/90'>
+                  リセット
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button onClick={handleSave} size='lg' className='w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground border-2 border-primary py-3 text-base' disabled={isSaving || isLoadingMenu}>
+            {isSaving ? (
+              <>
+                <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className='h-4 w-4 mr-2' />
+                保存
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
