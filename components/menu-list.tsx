@@ -662,6 +662,9 @@ export function MenuList({ onEditMenu }: MenuListProps) {
         }}
         selectedCategoryId={selectedCategoryId}
         onCategoryChange={setSelectedCategoryId}
+        subcategories={subcategories}
+        selectedSubcategoryId={selectedSubcategoryId}
+        onSubcategoryChange={setSelectedSubcategoryId}
       />
 
       {/* Category Edit Dialog */}

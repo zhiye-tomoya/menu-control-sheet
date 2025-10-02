@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, FolderPlus, Search, Loader2, Filter } from "lucide-react";
 import { categoryClientService } from "@/lib/services/category-client-service";
-import { Category } from "@/lib/types";
+import { Category, Subcategory } from "@/lib/types";
 import { toast } from "sonner";
 
 interface MobileBottomNavigationProps {
@@ -19,15 +19,19 @@ interface MobileBottomNavigationProps {
   onCategoryCreated: (category: Category) => void;
   selectedCategoryId: string | null;
   onCategoryChange: (categoryId: string | null) => void;
+  subcategories: Subcategory[];
+  selectedSubcategoryId: string | null;
+  onSubcategoryChange: (subcategoryId: string | null) => void;
 }
 
-export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange, categories, onCategoryCreated, selectedCategoryId, onCategoryChange }: MobileBottomNavigationProps) {
+export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange, categories, onCategoryCreated, selectedCategoryId, onCategoryChange, subcategories, selectedSubcategoryId, onSubcategoryChange }: MobileBottomNavigationProps) {
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [showCategoryOverlay, setShowCategoryOverlay] = useState(false);
+  const [showSubcategoryOverlay, setShowSubcategoryOverlay] = useState(false);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -94,6 +98,7 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
                 variant={selectedCategoryId === null ? "default" : "outline"}
                 onClick={() => {
                   onCategoryChange(null);
+                  onSubcategoryChange(null);
                   setShowCategoryOverlay(false);
                 }}
                 className='w-full justify-start'
@@ -106,6 +111,7 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
                   variant={selectedCategoryId === category.id ? "default" : "outline"}
                   onClick={() => {
                     onCategoryChange(category.id);
+                    onSubcategoryChange(null);
                     setShowCategoryOverlay(false);
                   }}
                   className='w-full justify-start'
@@ -115,6 +121,56 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
               ))}
             </div>
             <Button variant='outline' onClick={() => setShowCategoryOverlay(false)} className='w-full'>
+              完了
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Subcategory Filter Overlay - Mobile Only */}
+      {showSubcategoryOverlay && (
+        <div className='fixed inset-0 bg-black/50 z-50 sm:hidden'>
+          <div className='absolute bottom-0 left-0 right-0 bg-background border-t-2 border-primary p-4 rounded-t-lg animate-in slide-in-from-bottom duration-200 max-h-[70vh] overflow-y-auto'>
+            <div className='flex items-center justify-between mb-4'>
+              <h3 className='text-lg font-semibold'>サブカテゴリで絞り込み</h3>
+              <Button variant='ghost' size='sm' onClick={() => setShowSubcategoryOverlay(false)} className='text-muted-foreground hover:text-foreground'>
+                ✕
+              </Button>
+            </div>
+            <div className='space-y-2 mb-4'>
+              <Button
+                variant={selectedSubcategoryId === null ? "secondary" : "outline"}
+                onClick={() => {
+                  onSubcategoryChange(null);
+                  setShowSubcategoryOverlay(false);
+                }}
+                className='w-full justify-start'
+              >
+                {selectedCategoryId === null ? "全サブカテゴリ" : "全て"}
+              </Button>
+              {subcategories
+                .filter((subcategory) => selectedCategoryId === null || subcategory.categoryId === selectedCategoryId)
+                .map((subcategory) => {
+                  const parentCategory = categories.find((cat) => cat.id === subcategory.categoryId);
+                  return (
+                    <Button
+                      key={subcategory.id}
+                      variant={selectedSubcategoryId === subcategory.id ? "secondary" : "outline"}
+                      onClick={() => {
+                        onSubcategoryChange(subcategory.id);
+                        setShowSubcategoryOverlay(false);
+                      }}
+                      className='w-full justify-start'
+                    >
+                      <div className='flex flex-col items-start'>
+                        <span>{subcategory.name}</span>
+                        {parentCategory && <span className='text-xs text-muted-foreground'>カテゴリ: {parentCategory.name}</span>}
+                      </div>
+                    </Button>
+                  );
+                })}
+            </div>
+            <Button variant='outline' onClick={() => setShowSubcategoryOverlay(false)} className='w-full'>
               完了
             </Button>
           </div>
@@ -133,7 +189,13 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
           {/* Category Filter Button */}
           <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
             <Filter className='h-5 w-5' />
-            <span className='text-xs font-medium'>絞り込み</span>
+            <span className='text-xs font-medium'>カテゴリ</span>
+          </Button>
+
+          {/* Subcategory Filter Button */}
+          <Button variant='ghost' size='lg' onClick={() => setShowSubcategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
+            <Filter className='h-5 w-5' />
+            <span className='text-xs font-medium'>サブ</span>
           </Button>
 
           {/* Create New Menu Button - Primary Action */}
