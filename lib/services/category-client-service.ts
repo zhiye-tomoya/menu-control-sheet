@@ -33,9 +33,25 @@ export const categoryClientService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to create category");
+      let errorMessage = "Failed to create category";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = `Failed to create category: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
-    return response.json();
+
+    const result = await response.json();
+
+    // Additional validation - make sure we got a valid category back
+    if (!result || !result.id || !result.name) {
+      throw new Error("Invalid response from server when creating category");
+    }
+
+    return result;
   },
 
   // Update an existing category
@@ -49,9 +65,25 @@ export const categoryClientService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to update category");
+      let errorMessage = "Failed to update category";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = `Failed to update category: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
-    return response.json();
+
+    const result = await response.json();
+
+    // Additional validation - make sure we got a valid category back
+    if (!result || !result.id || !result.name) {
+      throw new Error("Invalid response from server");
+    }
+
+    return result;
   },
 
   // Delete a category

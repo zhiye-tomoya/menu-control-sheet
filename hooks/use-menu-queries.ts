@@ -68,11 +68,15 @@ export function useUpdateMenu() {
   return useMutation({
     mutationFn: (input: UpdateMenuInput) => menuService.updateMenu(input),
     onSuccess: (updatedMenu) => {
-      // Invalidate and refetch menus list
-      queryClient.invalidateQueries({ queryKey: menuQueryKeys.lists() });
+      // More aggressive cache invalidation to ensure menu list refreshes
+      queryClient.invalidateQueries({ queryKey: menuQueryKeys.all });
 
       // Update the specific menu cache
       queryClient.setQueryData(menuQueryKeys.detail(updatedMenu.id), updatedMenu);
+
+      // Also invalidate any related queries (subcategories, categories)
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["subcategories"] });
 
       // Show success toast
       toast.success("メニューを更新しました", {
@@ -129,10 +133,15 @@ export function useSaveMenu() {
 
   return {
     saveMenu: async (input: CreateMenuInput | UpdateMenuInput) => {
-      if ("id" in input) {
-        return updateMenu.mutateAsync(input);
-      } else {
-        return createMenu.mutateAsync(input);
+      try {
+        if ("id" in input) {
+          return await updateMenu.mutateAsync(input);
+        } else {
+          return await createMenu.mutateAsync(input);
+        }
+      } catch (error) {
+        // Re-throw the error to ensure it's properly caught by the calling function
+        throw error;
       }
     },
     isLoading: createMenu.isPending || updateMenu.isPending,

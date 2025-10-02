@@ -125,14 +125,22 @@ export class CategoryService {
   }
 
   static async updateCategory(input: UpdateCategoryInput): Promise<Category> {
+    console.log("CategoryService.updateCategory called with:", input);
+    console.log("isDatabaseEnabled:", isDatabaseEnabled);
+    console.log("db:", !!db);
+
     const now = new Date().toISOString();
 
     if (!isDatabaseEnabled || !db) {
+      console.log("Using localStorage fallback for category update");
       // Fallback to localStorage
       const categories = getFromStorage();
+      console.log("Current categories from storage:", categories.length);
       const categoryIndex = categories.findIndex((cat) => cat.id === input.id);
+      console.log("Found category at index:", categoryIndex);
 
       if (categoryIndex === -1) {
+        console.error("Category not found in localStorage:", input.id);
         throw new Error("Category not found");
       }
 
@@ -145,17 +153,36 @@ export class CategoryService {
 
       categories[categoryIndex] = updatedCategory;
       saveToStorage(categories);
+      console.log("Updated category saved to localStorage:", updatedCategory);
       return updatedCategory;
     }
 
     try {
+      // First check if the category exists
+      const existingCategory = await db
+        .select({
+          id: categories.id,
+        })
+        .from(categories)
+        .where(eq(categories.id, input.id))
+        .limit(1);
+
+      if (existingCategory.length === 0) {
+        throw new Error("Category not found");
+      }
+
       const updatedData = {
         name: input.name,
         description: input.description || "",
         updatedAt: new Date(),
       };
 
-      await db.update(categories).set(updatedData).where(eq(categories.id, input.id));
+      const updateResult = await db.update(categories).set(updatedData).where(eq(categories.id, input.id));
+
+      // Check if the update actually affected any rows
+      if (!updateResult || updateResult.rowCount === 0) {
+        throw new Error("Failed to update category - no rows affected");
+      }
 
       const result = await db
         .select({
@@ -174,12 +201,19 @@ export class CategoryService {
       }
 
       const category = result[0];
-      return {
+      const updatedCategory = {
         ...category,
         description: category.description || "",
         createdAt: category.createdAt.toISOString(),
         updatedAt: category.updatedAt.toISOString(),
       };
+
+      // Verify the update actually took effect
+      if (updatedCategory.name !== input.name) {
+        throw new Error("Update verification failed - name not updated");
+      }
+
+      return updatedCategory;
     } catch (error) {
       console.error("Failed to update category:", error);
       throw new Error("Failed to update category");

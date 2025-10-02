@@ -21,12 +21,25 @@ const saveToStorage = (data: Subcategory[]) => {
   }
 };
 
-// GET /api/subcategories - Get all subcategories
-export async function GET() {
+// GET /api/subcategories - Get all subcategories or filter by categoryId
+export async function GET(request: Request) {
   try {
     if (isDatabaseEnabled && db) {
-      // Use database
-      const result = await db.select().from(subcategories);
+      // Parse query parameters
+      const { searchParams } = new URL(request.url);
+      const categoryId = searchParams.get("categoryId");
+
+      // Use database with optional categoryId filter
+      let result;
+      if (categoryId) {
+        // Filter by specific category
+        const { eq } = await import("drizzle-orm");
+        result = await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId));
+      } else {
+        // Get all subcategories
+        result = await db.select().from(subcategories);
+      }
+
       const formattedSubcategories = result.map((subcategory) => ({
         id: subcategory.id,
         name: subcategory.name,

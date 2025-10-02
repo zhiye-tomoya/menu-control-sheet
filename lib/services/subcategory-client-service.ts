@@ -42,9 +42,25 @@ export const subcategoryClientService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to create subcategory");
+      let errorMessage = "Failed to create subcategory";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = `Failed to create subcategory: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
-    return response.json();
+
+    const result = await response.json();
+
+    // Additional validation - make sure we got a valid subcategory back
+    if (!result || !result.id || !result.name) {
+      throw new Error("Invalid response from server when creating subcategory");
+    }
+
+    return result;
   },
 
   // Update an existing subcategory
@@ -58,9 +74,25 @@ export const subcategoryClientService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to update subcategory");
+      let errorMessage = "Failed to update subcategory";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = `Failed to update subcategory: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
-    return response.json();
+
+    const result = await response.json();
+
+    // Additional validation - make sure we got a valid subcategory back
+    if (!result || !result.id || !result.name) {
+      throw new Error("Invalid response from server when updating subcategory");
+    }
+
+    return result;
   },
 
   // Delete a subcategory

@@ -42,9 +42,25 @@ export const menuService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to create menu");
+      let errorMessage = "Failed to create menu";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = `Failed to create menu: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
-    return response.json();
+
+    const result = await response.json();
+
+    // Additional validation - make sure we got a valid menu back
+    if (!result || !result.id || !result.name) {
+      throw new Error("Invalid response from server when creating menu");
+    }
+
+    return result;
   },
 
   // Update an existing menu
@@ -58,9 +74,25 @@ export const menuService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to update menu");
+      let errorMessage = "Failed to update menu";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the error response, use status text
+        errorMessage = `Failed to update menu: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
-    return response.json();
+
+    const result = await response.json();
+
+    // Additional validation - make sure we got a valid menu back
+    if (!result || !result.id || !result.name) {
+      throw new Error("Invalid response from server when updating menu");
+    }
+
+    return result;
   },
 
   // Delete a menu

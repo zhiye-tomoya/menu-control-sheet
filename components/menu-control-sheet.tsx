@@ -124,8 +124,9 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
           });
           setSubcategories([defaultSubcategory]);
           setSubcategoryId(defaultSubcategory.id);
-        } else if (!menuId || !subcategoryId) {
-          // Set first subcategory as default for new menus or when subcategory is not set
+        } else {
+          // Always set the first subcategory when category changes
+          // This ensures the menu actually moves to the correct category
           setSubcategoryId(fetchedSubcategories[0].id);
         }
       } catch (error) {
@@ -135,7 +136,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     };
 
     loadSubcategories();
-  }, [categoryId, menuId]);
+  }, [categoryId, menuId]); // Don't include subcategoryId to avoid infinite loops
 
   // Load existing menu data when editing
   useEffect(() => {
@@ -223,6 +224,8 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
       onBack();
     } catch (error) {
       // Error handling is done in the mutation hook with toast notifications
+      // But we need to prevent navigation on error
+      console.error("Failed to save menu:", error);
     }
   };
 
