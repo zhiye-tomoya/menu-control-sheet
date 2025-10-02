@@ -483,10 +483,10 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
               <label className='text-base sm:text-lg font-bold text-foreground'>カテゴリ</label>
             </div>
             <div className='col-span-3 p-3 sm:p-4'>
-              <div className='flex gap-2'>
+              <div className='flex flex-col gap-2'>
                 <Select value={categoryId} onValueChange={setCategoryId}>
                   <SelectTrigger className='text-base sm:text-lg font-medium border-2 border-primary bg-card flex-1'>
-                    <SelectValue placeholder='カテゴリを選択してください' />
+                    <SelectValue placeholder='カテゴリを選択' />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -557,10 +557,10 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
               <label className='text-base sm:text-lg font-bold text-foreground'>サブカテゴリ</label>
             </div>
             <div className='col-span-3 p-3 sm:p-4'>
-              <div className='flex gap-2'>
+              <div className='flex flex-col gap-2'>
                 <Select value={subcategoryId} onValueChange={setSubcategoryId}>
                   <SelectTrigger className='text-base sm:text-lg font-medium border-2 border-primary bg-card flex-1'>
-                    <SelectValue placeholder='サブカテゴリを選択してください' />
+                    <SelectValue placeholder='サブカテゴリを選択' />
                   </SelectTrigger>
                   <SelectContent>
                     {subcategories.map((subcategory) => (
