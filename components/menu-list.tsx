@@ -77,7 +77,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   // Group menus by category and sort alphabetically within each category
   const groupedMenus = categories
     .map((category) => {
-      const allCategoryMenus = filteredMenus.filter((menu) => menu.categoryId === category.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+      const allCategoryMenus = filteredMenus.filter((menu) => menu.subcategoryId === category.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
       const currentPage = getCategoryPage(category.id);
       const paginatedMenus = getPaginatedMenus(allCategoryMenus, currentPage);
       const totalPages = Math.ceil(allCategoryMenus.length / menusPerCategory);
@@ -94,7 +94,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
     .filter((group) => group.allMenus.length > 0);
 
   // Get menus without categories (fallback) with pagination
-  const allUncategorizedMenus = filteredMenus.filter((menu) => !categories.some((cat) => cat.id === menu.categoryId)).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  const allUncategorizedMenus = filteredMenus.filter((menu) => !categories.some((cat) => cat.id === menu.subcategoryId)).sort((a, b) => a.name.localeCompare(b.name, "ja"));
   const uncategorizedMenus = getPaginatedMenus(allUncategorizedMenus, uncategorizedPage);
   const uncategorizedTotalPages = Math.ceil(allUncategorizedMenus.length / menusPerCategory);
   const uncategorizedHasMultiplePages = uncategorizedTotalPages > 1;

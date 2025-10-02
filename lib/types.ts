@@ -16,12 +16,24 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface Subcategory {
+  id: string;
+  name: string;
+  description: string;
+  categoryId: string;
+  category?: Category;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface MenuData {
   id: string;
   name: string;
   imageUrl: string;
   categoryId: string;
   category?: Category;
+  subcategoryId: string;
+  subcategory?: Subcategory;
   ingredients: Ingredient[];
   sellingPrice: number;
   totalCost: number;
@@ -36,6 +48,8 @@ export interface MenuItem {
   imageUrl: string;
   categoryId: string;
   category?: Category;
+  subcategoryId: string;
+  subcategory?: Subcategory;
   totalCost: number;
   sellingPrice: number;
   costRate: number;
@@ -46,7 +60,7 @@ export interface MenuItem {
 export interface CreateMenuInput {
   name: string;
   imageUrl: string;
-  categoryId: string;
+  subcategoryId: string;
   ingredients: Ingredient[];
   sellingPrice: number;
 }
@@ -61,6 +75,16 @@ export interface CreateCategoryInput {
 }
 
 export interface UpdateCategoryInput extends CreateCategoryInput {
+  id: string;
+}
+
+export interface CreateSubcategoryInput {
+  name: string;
+  description?: string;
+  categoryId: string;
+}
+
+export interface UpdateSubcategoryInput extends CreateSubcategoryInput {
   id: string;
 }
 

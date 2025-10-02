@@ -11,6 +11,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "migrate:subcategories": "node scripts/migrate-to-subcategories.js",
     "env:dev": "node scripts/switch-env.js development",
     "env:prod": "node scripts/switch-env.js production",
     "env:status": "node -e \"const fs = require('fs'); const env = fs.readFileSync('.env.local', 'utf8'); const match = env.match(/ENVIRONMENT=\\\"([^\\\"]+)\\\"/); console.log('🌍 Current environment:', match ? match[1] : 'unknown');\""
@@ -53,6 +54,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.5",
     "drizzle-orm": "^0.44.5",
     "embla-carousel-react": "8.5.1",

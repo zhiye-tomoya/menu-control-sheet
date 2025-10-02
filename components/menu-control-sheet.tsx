@@ -88,7 +88,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     if (existingMenu) {
       setProductName(existingMenu.name);
       setImageUrl(existingMenu.imageUrl);
-      setCategoryId(existingMenu.categoryId);
+      setCategoryId(existingMenu.subcategoryId);
       setIngredients(existingMenu.ingredients);
       setSellingPrice(existingMenu.sellingPrice);
     }
@@ -137,7 +137,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
       const menuInput = {
         name: productName.trim(),
         imageUrl: imageUrl,
-        categoryId: categoryId,
+        subcategoryId: categoryId,
         ingredients: ingredients,
         sellingPrice: sellingPrice,
       };

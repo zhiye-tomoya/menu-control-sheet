@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db, isDatabaseEnabled } from "@/lib/db/connection";
-import { menus } from "@/lib/db/schema";
+import { menus, subcategories } from "@/lib/db/schema";
 import { CreateMenuInput, MenuData, MenuItem } from "@/lib/types";
+import { eq } from "drizzle-orm";
 
 const STORAGE_KEY = "menu-control-menus";
 
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
         name: menu.name,
         imageUrl: menu.imageUrl,
         categoryId: menu.categoryId,
+        subcategoryId: menu.subcategoryId,
         totalCost: Number(menu.totalCost),
         sellingPrice: Number(menu.sellingPrice),
         costRate: Number(menu.costRate),
@@ -117,11 +119,21 @@ export async function POST(request: Request) {
       // Use database
       const { totalCost, costRate } = calculateMenuValues(input);
 
+      // Get the categoryId from the subcategory
+      const subcategoryResult = await db.select().from(subcategories).where(eq(subcategories.id, input.subcategoryId));
+
+      if (subcategoryResult.length === 0) {
+        return NextResponse.json({ error: "Subcategory not found" }, { status: 400 });
+      }
+
+      const categoryId = subcategoryResult[0].categoryId;
+
       const newMenu = {
         id: Date.now().toString(),
         name: input.name,
         imageUrl: input.imageUrl || "",
-        categoryId: input.categoryId,
+        categoryId: categoryId,
+        subcategoryId: input.subcategoryId,
         ingredients: input.ingredients,
         sellingPrice: input.sellingPrice.toFixed(2),
         totalCost: totalCost.toFixed(2),
