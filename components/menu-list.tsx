@@ -24,6 +24,7 @@ interface MenuListProps {
 export function MenuList({ onEditMenu }: MenuListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
@@ -88,8 +89,14 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   const groupedMenus = subcategories
     .filter((subcategory) => {
       // Filter subcategories by selected category
-      if (selectedCategoryId === null) return true;
-      return subcategory.categoryId === selectedCategoryId;
+      if (selectedCategoryId !== null && subcategory.categoryId !== selectedCategoryId) {
+        return false;
+      }
+      // Filter by selected subcategory
+      if (selectedSubcategoryId !== null && subcategory.id !== selectedSubcategoryId) {
+        return false;
+      }
+      return true;
     })
     .map((subcategory) => {
       // Get all menus that belong to this subcategory
@@ -206,12 +213,28 @@ export function MenuList({ onEditMenu }: MenuListProps) {
           {/* Category Filter Buttons - Desktop Only */}
           <div className='hidden sm:block mb-4'>
             <div className='flex flex-wrap gap-2 justify-center'>
-              <Button variant={selectedCategoryId === null ? "default" : "outline"} size='sm' onClick={() => setSelectedCategoryId(null)} className={selectedCategoryId === null ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}>
+              <Button
+                variant={selectedCategoryId === null ? "default" : "outline"}
+                size='sm'
+                onClick={() => {
+                  setSelectedCategoryId(null);
+                  setSelectedSubcategoryId(null);
+                }}
+                className={selectedCategoryId === null ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}
+              >
                 すべて
               </Button>
               {categories.map((category) => (
                 <div key={category.id} className='flex items-center gap-1'>
-                  <Button variant={selectedCategoryId === category.id ? "default" : "outline"} size='sm' onClick={() => setSelectedCategoryId(category.id)} className={selectedCategoryId === category.id ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}>
+                  <Button
+                    variant={selectedCategoryId === category.id ? "default" : "outline"}
+                    size='sm'
+                    onClick={() => {
+                      setSelectedCategoryId(category.id);
+                      setSelectedSubcategoryId(null);
+                    }}
+                    className={selectedCategoryId === category.id ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}
+                  >
                     {category.name}
                   </Button>
                   <Button variant='ghost' size='sm' onClick={() => openEditCategoryDialog(category)} className='h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted' title={`${category.name}を編集`}>
@@ -221,6 +244,24 @@ export function MenuList({ onEditMenu }: MenuListProps) {
               ))}
             </div>
           </div>
+
+          {/* Subcategory Filter Buttons - Desktop Only */}
+          {subcategories.filter((sub) => selectedCategoryId === null || sub.categoryId === selectedCategoryId).length > 0 && (
+            <div className='hidden sm:block mb-4'>
+              <div className='flex flex-wrap gap-2 justify-center'>
+                <Button variant={selectedSubcategoryId === null ? "secondary" : "outline"} size='sm' onClick={() => setSelectedSubcategoryId(null)} className={selectedSubcategoryId === null ? "bg-secondary text-secondary-foreground" : "border border-secondary hover:bg-muted text-sm"}>
+                  {selectedCategoryId === null ? "全サブカテゴリ" : "全て"}
+                </Button>
+                {subcategories
+                  .filter((subcategory) => selectedCategoryId === null || subcategory.categoryId === selectedCategoryId)
+                  .map((subcategory) => (
+                    <Button key={subcategory.id} variant={selectedSubcategoryId === subcategory.id ? "secondary" : "outline"} size='sm' onClick={() => setSelectedSubcategoryId(subcategory.id)} className={selectedSubcategoryId === subcategory.id ? "bg-secondary text-secondary-foreground" : "border border-secondary hover:bg-muted text-sm"}>
+                      {subcategory.name}
+                    </Button>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Search and Add Section - Desktop Only */}
           <div className='hidden sm:flex flex-col sm:flex-row gap-4 items-center'>
