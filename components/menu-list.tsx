@@ -23,6 +23,7 @@ interface MenuListProps {
 
 export function MenuList({ onEditMenu }: MenuListProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
@@ -80,6 +81,11 @@ export function MenuList({ onEditMenu }: MenuListProps) {
 
   // Group menus by subcategories
   const groupedMenus = subcategories
+    .filter((subcategory) => {
+      // Filter subcategories by selected category
+      if (selectedCategoryId === null) return true;
+      return subcategory.categoryId === selectedCategoryId;
+    })
     .map((subcategory) => {
       // Get all menus that belong to this subcategory
       const allSubcategoryMenus = filteredMenus.filter((menu) => menu.subcategoryId === subcategory.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
@@ -147,8 +153,22 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   return (
     <div className='max-w-7xl mx-auto px-2 sm:px-4'>
       <Card className='border-2 sm:border-4 border-primary bg-card'>
-        <div className='border-b-2 sm:border-b-4 border-primary bg-card p-4 sm:p-6'>
+        <div className='border-b-2 sm:border-b-4 border-primary bg-card p-4 sm:p-6 sm:sticky sm:top-0 sm:z-50'>
           <h1 className='text-2xl sm:text-3xl font-bold text-center text-foreground mb-4'>メニュー管理</h1>
+
+          {/* Category Filter Buttons - Desktop Only */}
+          <div className='hidden sm:block mb-4'>
+            <div className='flex flex-wrap gap-2 justify-center'>
+              <Button variant={selectedCategoryId === null ? "default" : "outline"} size='sm' onClick={() => setSelectedCategoryId(null)} className={selectedCategoryId === null ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}>
+                すべて
+              </Button>
+              {categories.map((category) => (
+                <Button key={category.id} variant={selectedCategoryId === category.id ? "default" : "outline"} size='sm' onClick={() => setSelectedCategoryId(category.id)} className={selectedCategoryId === category.id ? "bg-primary text-primary-foreground" : "border-2 border-primary hover:bg-muted"}>
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+          </div>
 
           {/* Search and Add Section - Desktop Only */}
           <div className='hidden sm:flex flex-col sm:flex-row gap-4 items-center'>
