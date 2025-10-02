@@ -36,6 +36,11 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
   const [newSubcategoryName, setNewSubcategoryName] = useState("");
   const [newSubcategoryDescription, setNewSubcategoryDescription] = useState("");
   const [isCreatingSubcategory, setIsCreatingSubcategory] = useState(false);
+  const [isEditSubcategoryOpen, setIsEditSubcategoryOpen] = useState(false);
+  const [editingSubcategoryId, setEditingSubcategoryId] = useState<string>("");
+  const [editSubcategoryName, setEditSubcategoryName] = useState("");
+  const [editSubcategoryDescription, setEditSubcategoryDescription] = useState("");
+  const [isEditingSubcategory, setIsEditingSubcategory] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string>("");
   const [editCategoryName, setEditCategoryName] = useState("");
@@ -369,6 +374,49 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     }
   };
 
+  const handleEditSubcategory = async () => {
+    if (!editSubcategoryName.trim()) {
+      toast.error("サブカテゴリ名を入力してください");
+      return;
+    }
+
+    if (!editingSubcategoryId) {
+      toast.error("編集するサブカテゴリが選択されていません");
+      return;
+    }
+
+    setIsEditingSubcategory(true);
+
+    try {
+      const updatedSubcategory = await subcategoryClientService.updateSubcategory({
+        id: editingSubcategoryId,
+        name: editSubcategoryName.trim(),
+        description: editSubcategoryDescription.trim(),
+        categoryId: categoryId, // Keep the current category
+      });
+
+      setSubcategories((prev) => prev.map((sub) => (sub.id === editingSubcategoryId ? updatedSubcategory : sub)).sort((a, b) => a.name.localeCompare(b.name, "ja")));
+
+      toast.success("サブカテゴリを更新しました");
+      setIsEditSubcategoryOpen(false);
+      setEditingSubcategoryId("");
+      setEditSubcategoryName("");
+      setEditSubcategoryDescription("");
+    } catch (error) {
+      console.error("Failed to update subcategory:", error);
+      toast.error("サブカテゴリの更新に失敗しました");
+    } finally {
+      setIsEditingSubcategory(false);
+    }
+  };
+
+  const openEditSubcategoryDialog = (subcategory: Subcategory) => {
+    setEditingSubcategoryId(subcategory.id);
+    setEditSubcategoryName(subcategory.name);
+    setEditSubcategoryDescription(subcategory.description || "");
+    setIsEditSubcategoryOpen(true);
+  };
+
   const openEditCategoryDialog = (category: Category) => {
     setEditingCategoryId(category.id);
     setEditCategoryName(category.name);
@@ -573,9 +621,72 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                <Button
+                  variant='outline'
+                  size='lg'
+                  className='border-2 border-primary hover:bg-muted bg-transparent'
+                  disabled={!subcategoryId || subcategories.length === 0}
+                  onClick={() => {
+                    const currentSubcategory = subcategories.find((sub) => sub.id === subcategoryId);
+                    if (currentSubcategory) {
+                      openEditSubcategoryDialog(currentSubcategory);
+                    }
+                  }}
+                >
+                  <Edit className='h-4 w-4 mr-1 sm:mr-2' />
+                  <span className='hidden sm:inline'>サブカテゴリを編集</span>
+                  <span className='sm:hidden'>編集</span>
+                </Button>
               </div>
             </div>
           </div>
+
+          {/* Edit Subcategory Dialog */}
+          <Dialog open={isEditSubcategoryOpen} onOpenChange={setIsEditSubcategoryOpen}>
+            <DialogContent className='sm:max-w-md'>
+              <DialogHeader>
+                <DialogTitle>サブカテゴリを編集</DialogTitle>
+                <DialogDescription>選択されたサブカテゴリの情報を編集します。</DialogDescription>
+              </DialogHeader>
+              <div className='grid gap-4 py-4'>
+                <div className='grid gap-2'>
+                  <Label htmlFor='edit-subcategory-name'>サブカテゴリ名 *</Label>
+                  <Input id='edit-subcategory-name' placeholder='サブカテゴリ名を入力...' value={editSubcategoryName} onChange={(e) => setEditSubcategoryName(e.target.value)} className='border-2 border-primary' />
+                </div>
+                <div className='grid gap-2'>
+                  <Label htmlFor='edit-subcategory-description'>説明（任意）</Label>
+                  <Textarea id='edit-subcategory-description' placeholder='サブカテゴリの説明を入力...' value={editSubcategoryDescription} onChange={(e) => setEditSubcategoryDescription(e.target.value)} className='border-2 border-primary resize-none' rows={3} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant='outline'
+                  onClick={() => {
+                    setIsEditSubcategoryOpen(false);
+                    setEditingSubcategoryId("");
+                    setEditSubcategoryName("");
+                    setEditSubcategoryDescription("");
+                  }}
+                  disabled={isEditingSubcategory}
+                >
+                  キャンセル
+                </Button>
+                <Button onClick={handleEditSubcategory} disabled={!editSubcategoryName.trim() || isEditingSubcategory} className='bg-primary hover:bg-primary/90'>
+                  {isEditingSubcategory ? (
+                    <>
+                      <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      更新中...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className='h-4 w-4 mr-2' />
+                      更新
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Main Content Grid */}
           <div className='grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 border-4 border-primary'>

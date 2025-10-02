@@ -1,22 +1,100 @@
 import { MenuData, MenuItem, CreateMenuInput, UpdateMenuInput, PaginatedResponse, PaginationParams } from "@/lib/types";
 
 export const menuService = {
-  // Get all menus with optional pagination
-  async getMenus(params?: PaginationParams): Promise<MenuItem[] | PaginatedResponse<MenuItem>> {
-    const searchParams = new URLSearchParams();
-    if (params?.page) {
-      searchParams.append("page", params.page.toString());
-    }
-    if (params?.limit) {
-      searchParams.append("limit", params.limit.toString());
+  // LocalStorage fallback for getting menus
+  getMenusFromLocalStorage(params?: PaginationParams): MenuItem[] | PaginatedResponse<MenuItem> {
+    const STORAGE_KEY = "menu-control-menus";
+
+    if (typeof window === "undefined") {
+      // Server-side: return empty array
+      return params?.limit
+        ? {
+            data: [],
+            pagination: {
+              page: params.page || 1,
+              limit: params.limit,
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          }
+        : [];
     }
 
-    const url = params?.limit ? `/api/menus?${searchParams}` : "/api/menus";
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Failed to fetch menus");
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const allMenus: MenuItem[] = saved ? JSON.parse(saved) : [];
+
+      if (params?.limit) {
+        // Return paginated response
+        const page = params.page || 1;
+        const offset = (page - 1) * params.limit;
+        const paginatedMenus = allMenus.slice(offset, offset + params.limit);
+        const totalPages = Math.ceil(allMenus.length / params.limit);
+
+        return {
+          data: paginatedMenus,
+          pagination: {
+            page,
+            limit: params.limit,
+            total: allMenus.length,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        };
+      } else {
+        // Return all menus
+        return allMenus;
+      }
+    } catch (error) {
+      console.error("Error reading from localStorage:", error);
+      return params?.limit
+        ? {
+            data: [],
+            pagination: {
+              page: params?.page || 1,
+              limit: params.limit,
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          }
+        : [];
     }
-    return response.json();
+  },
+
+  // Get all menus with optional pagination
+  async getMenus(params?: PaginationParams): Promise<MenuItem[] | PaginatedResponse<MenuItem>> {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) {
+        searchParams.append("page", params.page.toString());
+      }
+      if (params?.limit) {
+        searchParams.append("limit", params.limit.toString());
+      }
+
+      const url = params?.limit ? `/api/menus?${searchParams}` : "/api/menus";
+      const response = await fetch(url);
+
+      // If we get a 503 (database not available due to quota), fallback to localStorage
+      if (response.status === 503) {
+        console.warn("Database unavailable (quota exceeded), falling back to localStorage");
+        return this.getMenusFromLocalStorage(params);
+      }
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch menus");
+      }
+      return response.json();
+    } catch (error) {
+      // If any network error occurs, fallback to localStorage
+      console.warn("API request failed, falling back to localStorage:", error);
+      return this.getMenusFromLocalStorage(params);
+    }
   },
 
   // Get a single menu by ID
