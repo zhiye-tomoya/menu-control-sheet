@@ -8,11 +8,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Upload, RotateCcw, ArrowLeft, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, RotateCcw, ArrowLeft, Save, Loader2, FolderPlus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useMenu, useSaveMenu } from "@/hooks/use-menu-queries";
-import { Ingredient, Category } from "@/lib/types";
+import { Ingredient, Category, Subcategory } from "@/lib/types";
 import { categoryClientService } from "@/lib/services/category-client-service";
+import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
 import { toast } from "sonner";
 
 interface MenuControlSheetProps {
@@ -24,7 +28,13 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
   const [productName, setProductName] = useState("ブレンドコーヒー");
   const [imageUrl, setImageUrl] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
+  const [subcategoryId, setSubcategoryId] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [isCreateSubcategoryOpen, setIsCreateSubcategoryOpen] = useState(false);
+  const [newSubcategoryName, setNewSubcategoryName] = useState("");
+  const [newSubcategoryDescription, setNewSubcategoryDescription] = useState("");
+  const [isCreatingSubcategory, setIsCreatingSubcategory] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([
     {
       id: "1",
@@ -83,15 +93,66 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     loadCategories();
   }, [menuId]);
 
+  // Load subcategories when category changes
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (!categoryId) {
+        setSubcategories([]);
+        setSubcategoryId("");
+        return;
+      }
+
+      try {
+        const fetchedSubcategories = await subcategoryClientService.getSubcategoriesByCategory(categoryId);
+        setSubcategories(fetchedSubcategories);
+
+        // If no subcategories exist for this category, create a default one
+        if (fetchedSubcategories.length === 0) {
+          const defaultSubcategory = await subcategoryClientService.createSubcategory({
+            name: "デフォルト",
+            description: "デフォルトサブカテゴリ",
+            categoryId: categoryId,
+          });
+          setSubcategories([defaultSubcategory]);
+          setSubcategoryId(defaultSubcategory.id);
+        } else if (!menuId || !subcategoryId) {
+          // Set first subcategory as default for new menus or when subcategory is not set
+          setSubcategoryId(fetchedSubcategories[0].id);
+        }
+      } catch (error) {
+        console.error("Failed to load subcategories:", error);
+        toast.error("サブカテゴリの読み込みに失敗しました");
+      }
+    };
+
+    loadSubcategories();
+  }, [categoryId, menuId]);
+
   // Load existing menu data when editing
   useEffect(() => {
-    if (existingMenu) {
-      setProductName(existingMenu.name);
-      setImageUrl(existingMenu.imageUrl);
-      setCategoryId(existingMenu.subcategoryId);
-      setIngredients(existingMenu.ingredients);
-      setSellingPrice(existingMenu.sellingPrice);
-    }
+    const loadExistingMenuData = async () => {
+      if (existingMenu) {
+        setProductName(existingMenu.name);
+        setImageUrl(existingMenu.imageUrl);
+        setIngredients(existingMenu.ingredients);
+        setSellingPrice(existingMenu.sellingPrice);
+
+        // Load the subcategory to get the parent category
+        try {
+          const subcategory = await subcategoryClientService.getSubcategory(existingMenu.subcategoryId);
+          if (subcategory) {
+            setCategoryId(subcategory.categoryId);
+            setSubcategoryId(subcategory.id);
+          }
+        } catch (error) {
+          console.error("Failed to load subcategory for existing menu:", error);
+          // Fallback: try to match with existing subcategories
+          setSubcategoryId(existingMenu.subcategoryId);
+        }
+      }
+    };
+
+    loadExistingMenuData();
   }, [existingMenu]);
 
   const handleSave = async () => {
@@ -126,9 +187,9 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
       return;
     }
 
-    if (!categoryId) {
-      toast.error("カテゴリを選択してください", {
-        description: "カテゴリは必須項目です。",
+    if (!subcategoryId) {
+      toast.error("サブカテゴリを選択してください", {
+        description: "サブカテゴリは必須項目です。",
       });
       return;
     }
@@ -137,7 +198,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
       const menuInput = {
         name: productName.trim(),
         imageUrl: imageUrl,
-        subcategoryId: categoryId,
+        subcategoryId: subcategoryId,
         ingredients: ingredients,
         sellingPrice: sellingPrice,
       };
@@ -226,6 +287,40 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
     setSellingPrice(450);
   };
 
+  const handleCreateSubcategory = async () => {
+    if (!newSubcategoryName.trim()) {
+      toast.error("サブカテゴリ名を入力してください");
+      return;
+    }
+
+    if (!categoryId) {
+      toast.error("先にカテゴリを選択してください");
+      return;
+    }
+
+    setIsCreatingSubcategory(true);
+
+    try {
+      const newSubcategory = await subcategoryClientService.createSubcategory({
+        name: newSubcategoryName.trim(),
+        description: newSubcategoryDescription.trim(),
+        categoryId: categoryId,
+      });
+
+      setSubcategories((prev) => [...prev, newSubcategory].sort((a, b) => a.name.localeCompare(b.name, "ja")));
+      setSubcategoryId(newSubcategory.id);
+      toast.success("サブカテゴリを作成しました");
+      setIsCreateSubcategoryOpen(false);
+      setNewSubcategoryName("");
+      setNewSubcategoryDescription("");
+    } catch (error) {
+      console.error("Failed to create subcategory:", error);
+      toast.error("サブカテゴリの作成に失敗しました");
+    } finally {
+      setIsCreatingSubcategory(false);
+    }
+  };
+
   return (
     <div className='max-w-7xl mx-auto px-2 sm:px-4'>
       <Card className='border-2 sm:border-4 border-primary bg-card'>
@@ -269,6 +364,80 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Subcategory Section */}
+          <div className='grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4 border-2 sm:border-4 border-primary bg-muted/30'>
+            <div className='bg-muted md:border-r-4 border-primary p-3 sm:p-4 flex items-center'>
+              <label className='text-base sm:text-lg font-bold text-foreground'>サブカテゴリ</label>
+            </div>
+            <div className='col-span-3 p-3 sm:p-4'>
+              <div className='flex gap-2'>
+                <Select value={subcategoryId} onValueChange={setSubcategoryId}>
+                  <SelectTrigger className='text-base sm:text-lg font-medium border-2 border-primary bg-card flex-1'>
+                    <SelectValue placeholder='サブカテゴリを選択してください' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subcategories.map((subcategory) => (
+                      <SelectItem key={subcategory.id} value={subcategory.id}>
+                        {subcategory.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Dialog open={isCreateSubcategoryOpen} onOpenChange={setIsCreateSubcategoryOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent' disabled={!categoryId}>
+                      <FolderPlus className='h-4 w-4 mr-1 sm:mr-2' />
+                      <span className='hidden sm:inline'>サブカテゴリを作成</span>
+                      <span className='sm:hidden'>作成</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className='sm:max-w-md'>
+                    <DialogHeader>
+                      <DialogTitle>新しいサブカテゴリを作成</DialogTitle>
+                      <DialogDescription>選択されたカテゴリに新しいサブカテゴリを作成します。</DialogDescription>
+                    </DialogHeader>
+                    <div className='grid gap-4 py-4'>
+                      <div className='grid gap-2'>
+                        <Label htmlFor='subcategory-name'>サブカテゴリ名 *</Label>
+                        <Input id='subcategory-name' placeholder='サブカテゴリ名を入力...' value={newSubcategoryName} onChange={(e) => setNewSubcategoryName(e.target.value)} className='border-2 border-primary' />
+                      </div>
+                      <div className='grid gap-2'>
+                        <Label htmlFor='subcategory-description'>説明（任意）</Label>
+                        <Textarea id='subcategory-description' placeholder='サブカテゴリの説明を入力...' value={newSubcategoryDescription} onChange={(e) => setNewSubcategoryDescription(e.target.value)} className='border-2 border-primary resize-none' rows={3} />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant='outline'
+                        onClick={() => {
+                          setIsCreateSubcategoryOpen(false);
+                          setNewSubcategoryName("");
+                          setNewSubcategoryDescription("");
+                        }}
+                        disabled={isCreatingSubcategory}
+                      >
+                        キャンセル
+                      </Button>
+                      <Button onClick={handleCreateSubcategory} disabled={!newSubcategoryName.trim() || isCreatingSubcategory} className='bg-primary hover:bg-primary/90'>
+                        {isCreatingSubcategory ? (
+                          <>
+                            <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                            作成中...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className='h-4 w-4 mr-2' />
+                            作成
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
 

@@ -12,7 +12,8 @@ import { Plus, Edit, Trash2, Search, Calculator, Loader2, FolderPlus } from "luc
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useMenusPaginated, useDeleteMenu } from "@/hooks/use-menu-queries";
 import { categoryClientService } from "@/lib/services/category-client-service";
-import { Category, MenuItem, PaginatedResponse } from "@/lib/types";
+import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
+import { Category, Subcategory, MenuItem, PaginatedResponse } from "@/lib/types";
 import { toast } from "sonner";
 import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
 
@@ -23,15 +24,16 @@ interface MenuListProps {
 export function MenuList({ onEditMenu }: MenuListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
-  // Per-category pagination state - key is categoryId, value is current page
-  const [categoryPages, setCategoryPages] = useState<Record<string, number>>({});
+  // Per-subcategory pagination state - key is subcategoryId, value is current page
+  const [subcategoryPages, setSubcategoryPages] = useState<Record<string, number>>({});
   const [uncategorizedPage, setUncategorizedPage] = useState(1);
-  const menusPerCategory = 6; // Show 6 menus per category
+  const menusPerSubcategory = 6; // Show 6 menus per subcategory
 
   // Get all menus (no global pagination, we'll handle it per category)
   const { data, isLoading, error } = useMenusPaginated({
@@ -43,48 +45,56 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   // Extract menus from response
   const menus = Array.isArray(data) ? data : (data as PaginatedResponse<MenuItem>)?.data || [];
 
-  // Load categories
+  // Load categories and subcategories
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadData = async () => {
       try {
-        const fetchedCategories = await categoryClientService.getCategories();
+        const [fetchedCategories, fetchedSubcategories] = await Promise.all([categoryClientService.getCategories(), subcategoryClientService.getSubcategories()]);
+
         setCategories(fetchedCategories);
+        setSubcategories(fetchedSubcategories);
       } catch (error) {
-        console.error("Failed to load categories:", error);
+        console.error("Failed to load categories and subcategories:", error);
       }
     };
 
-    loadCategories();
+    loadData();
   }, []);
 
   const filteredMenus = menus.filter((menu) => menu.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // Helper function to get current page for a category
-  const getCategoryPage = (categoryId: string) => categoryPages[categoryId] || 1;
+  // Helper function to get current page for a subcategory
+  const getSubcategoryPage = (subcategoryId: string) => subcategoryPages[subcategoryId] || 1;
 
-  // Helper function to set page for a category
-  const setCategoryPage = (categoryId: string, page: number) => {
-    setCategoryPages((prev) => ({ ...prev, [categoryId]: page }));
+  // Helper function to set page for a subcategory
+  const setSubcategoryPage = (subcategoryId: string, page: number) => {
+    setSubcategoryPages((prev: Record<string, number>) => ({ ...prev, [subcategoryId]: page }));
   };
 
-  // Helper function to get paginated menus for a category
+  // Helper function to get paginated menus for a subcategory
   const getPaginatedMenus = (menus: MenuItem[], page: number) => {
-    const startIndex = (page - 1) * menusPerCategory;
-    const endIndex = startIndex + menusPerCategory;
+    const startIndex = (page - 1) * menusPerSubcategory;
+    const endIndex = startIndex + menusPerSubcategory;
     return menus.slice(startIndex, endIndex);
   };
 
-  // Group menus by category and sort alphabetically within each category
-  const groupedMenus = categories
-    .map((category) => {
-      const allCategoryMenus = filteredMenus.filter((menu) => menu.subcategoryId === category.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
-      const currentPage = getCategoryPage(category.id);
-      const paginatedMenus = getPaginatedMenus(allCategoryMenus, currentPage);
-      const totalPages = Math.ceil(allCategoryMenus.length / menusPerCategory);
+  // Group menus by subcategories
+  const groupedMenus = subcategories
+    .map((subcategory) => {
+      // Get all menus that belong to this subcategory
+      const allSubcategoryMenus = filteredMenus.filter((menu) => menu.subcategoryId === subcategory.id).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+
+      const currentPage = getSubcategoryPage(subcategory.id);
+      const paginatedMenus = getPaginatedMenus(allSubcategoryMenus, currentPage);
+      const totalPages = Math.ceil(allSubcategoryMenus.length / menusPerSubcategory);
+
+      // Get the parent category for display
+      const parentCategory = categories.find((cat) => cat.id === subcategory.categoryId);
 
       return {
-        category,
-        allMenus: allCategoryMenus,
+        subcategory,
+        parentCategory,
+        allMenus: allSubcategoryMenus,
         menus: paginatedMenus,
         currentPage,
         totalPages,
@@ -93,10 +103,10 @@ export function MenuList({ onEditMenu }: MenuListProps) {
     })
     .filter((group) => group.allMenus.length > 0);
 
-  // Get menus without categories (fallback) with pagination
-  const allUncategorizedMenus = filteredMenus.filter((menu) => !categories.some((cat) => cat.id === menu.subcategoryId)).sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  // Get menus without proper subcategories (fallback) with pagination
+  const allUncategorizedMenus = filteredMenus.filter((menu) => !subcategories.some((sub) => sub.id === menu.subcategoryId)).sort((a, b) => a.name.localeCompare(b.name, "ja"));
   const uncategorizedMenus = getPaginatedMenus(allUncategorizedMenus, uncategorizedPage);
-  const uncategorizedTotalPages = Math.ceil(allUncategorizedMenus.length / menusPerCategory);
+  const uncategorizedTotalPages = Math.ceil(allUncategorizedMenus.length / menusPerSubcategory);
   const uncategorizedHasMultiplePages = uncategorizedTotalPages > 1;
 
   const handleDeleteMenu = async (menuId: string) => {
@@ -235,13 +245,16 @@ export function MenuList({ onEditMenu }: MenuListProps) {
             </div>
           ) : (
             <div className='space-y-8'>
-              {/* Render grouped menus by category */}
-              {groupedMenus.map(({ category, menus, currentPage, totalPages, hasMultiplePages, allMenus }) => (
-                <div key={category.id}>
+              {/* Render grouped menus by subcategory */}
+              {groupedMenus.map(({ subcategory, parentCategory, menus, currentPage, totalPages, hasMultiplePages, allMenus }) => (
+                <div key={subcategory.id}>
                   <div className='flex justify-between items-center mb-4'>
-                    <h2 className='text-xl font-bold text-foreground pb-2 border-b-2 border-primary'>{category.name}</h2>
+                    <div className='flex flex-col'>
+                      <h2 className='text-xl font-bold text-foreground pb-2 border-b-2 border-primary'>{subcategory.name}</h2>
+                      {parentCategory && <p className='text-sm text-muted-foreground mt-1'>カテゴリ: {parentCategory.name}</p>}
+                    </div>
                     <span className='text-sm text-muted-foreground'>
-                      {allMenus.length} 件中 {Math.min((currentPage - 1) * menusPerCategory + 1, allMenus.length)} - {Math.min(currentPage * menusPerCategory, allMenus.length)} 件表示
+                      {allMenus.length} 件中 {Math.min((currentPage - 1) * menusPerSubcategory + 1, allMenus.length)} - {Math.min(currentPage * menusPerSubcategory, allMenus.length)} 件表示
                     </span>
                   </div>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
@@ -328,7 +341,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                       </Card>
                     ))}
                   </div>
-                  {/* Category Pagination */}
+                  {/* Subcategory Pagination */}
                   {hasMultiplePages && (
                     <div className='mt-6'>
                       <Pagination>
@@ -339,7 +352,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                               onClick={(e) => {
                                 e.preventDefault();
                                 if (currentPage > 1) {
-                                  setCategoryPage(category.id, currentPage - 1);
+                                  setSubcategoryPage(subcategory.id, currentPage - 1);
                                 }
                               }}
                               className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
@@ -351,7 +364,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                                 href='#'
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  setCategoryPage(category.id, page);
+                                  setSubcategoryPage(subcategory.id, page);
                                 }}
                                 isActive={currentPage === page}
                               >
@@ -365,7 +378,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                               onClick={(e) => {
                                 e.preventDefault();
                                 if (currentPage < totalPages) {
-                                  setCategoryPage(category.id, currentPage + 1);
+                                  setSubcategoryPage(subcategory.id, currentPage + 1);
                                 }
                               }}
                               className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
@@ -384,7 +397,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
                   <div className='flex justify-between items-center mb-4'>
                     <h2 className='text-xl font-bold text-foreground pb-2 border-b-2 border-primary'>未分類</h2>
                     <span className='text-sm text-muted-foreground'>
-                      {allUncategorizedMenus.length} 件中 {Math.min((uncategorizedPage - 1) * menusPerCategory + 1, allUncategorizedMenus.length)} - {Math.min(uncategorizedPage * menusPerCategory, allUncategorizedMenus.length)} 件表示
+                      {allUncategorizedMenus.length} 件中 {Math.min((uncategorizedPage - 1) * menusPerSubcategory + 1, allUncategorizedMenus.length)} - {Math.min(uncategorizedPage * menusPerSubcategory, allUncategorizedMenus.length)} 件表示
                     </span>
                   </div>
                   <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'>
