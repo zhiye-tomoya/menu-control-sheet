@@ -1,0 +1,1 @@
+ALTER TABLE "menus" ALTER COLUMN "cost_rate" SET DATA TYPE numeric(8, 2);

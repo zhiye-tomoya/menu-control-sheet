@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, FolderPlus } from "lucide-react";
+import { Search, Plus, FolderPlus, Package } from "lucide-react";
+import Link from "next/link";
 
 interface MenuListHeaderProps {
   searchTerm: string;
@@ -23,6 +24,12 @@ export function MenuListHeader({ searchTerm, onSearchChange, onCreateMenu, onCre
           <Input placeholder='メニューを検索...' value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} className='pl-10 border-2 border-primary' />
         </div>
         <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
+          <Link href='/ingredients'>
+            <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent w-full sm:w-auto'>
+              <Package className='h-4 w-4 mr-2' />
+              材料管理
+            </Button>
+          </Link>
           <Button variant='outline' size='lg' onClick={onCreateCategory} className='border-2 border-primary hover:bg-muted bg-transparent w-full sm:w-auto'>
             <FolderPlus className='h-4 w-4 mr-2' />
             カテゴリを作成

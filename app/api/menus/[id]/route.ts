@@ -9,7 +9,9 @@ function calculateMenuValues(input: UpdateMenuInput): {
   totalCost: number;
   costRate: number;
 } {
-  const totalCost = input.ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
+  // Handle both legacy ingredients array and new normalized structure
+  const ingredients = input.ingredients || [];
+  const totalCost = ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
   const costRate = input.sellingPrice > 0 ? (totalCost / input.sellingPrice) * 100 : 0;
 
   return { totalCost, costRate };
@@ -67,7 +69,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         imageUrl: input.imageUrl || "",
         categoryId: categoryId,
         subcategoryId: input.subcategoryId,
-        ingredients: input.ingredients,
+        ingredients: input.ingredients || [],
         sellingPrice: input.sellingPrice.toFixed(2),
         totalCost: totalCost.toFixed(2),
         costRate: costRate.toFixed(2),

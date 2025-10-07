@@ -1,3 +1,28 @@
+// Base ingredient definition (master data)
+export interface BaseIngredient {
+  id: string;
+  name: string;
+  defaultUnit: string; // g, ml, 個, etc.
+  pricingUnit: string; // 袋, kg, l, etc.
+  conversionFactor: number; // how many default_unit per pricing_unit
+  currentPrice: number;
+  category?: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Recipe ingredient (used in menus)
+export interface RecipeIngredient {
+  id: string;
+  ingredientId: string;
+  ingredient?: BaseIngredient; // populated via join
+  quantity: number; // amount used in recipe
+  calculatedCost: number; // auto-calculated
+  createdAt: string;
+}
+
+// Legacy ingredient interface for backward compatibility
 export interface Ingredient {
   id: string;
   no: number;
@@ -37,7 +62,10 @@ export interface MenuData {
   category?: Category;
   subcategoryId: string;
   subcategory?: Subcategory;
-  ingredients: Ingredient[];
+  // New normalized structure
+  recipeIngredients?: RecipeIngredient[];
+  // Legacy field for backward compatibility
+  ingredients?: Ingredient[];
   sellingPrice: number;
   totalCost: number;
   costRate: number;
@@ -64,8 +92,24 @@ export interface CreateMenuInput {
   name: string;
   imageUrl: string;
   subcategoryId: string;
-  ingredients: Ingredient[];
+  // Support both new and legacy format
+  ingredients?: Ingredient[]; // legacy
+  recipeIngredients?: RecipeIngredient[]; // new normalized
   sellingPrice: number;
+}
+
+export interface CreateBaseIngredientInput {
+  name: string;
+  defaultUnit: string;
+  pricingUnit: string;
+  conversionFactor: number;
+  currentPrice: number;
+  category?: string;
+  description?: string;
+}
+
+export interface UpdateBaseIngredientInput extends CreateBaseIngredientInput {
+  id: string;
 }
 
 export interface UpdateMenuInput extends CreateMenuInput {

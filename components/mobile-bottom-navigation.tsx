@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FolderPlus, Search, Loader2, Filter, ArrowLeft, Save, RotateCcw } from "lucide-react";
+import { Plus, FolderPlus, Search, Loader2, Filter, ArrowLeft, Save, RotateCcw, Package } from "lucide-react";
+import Link from "next/link";
 import { categoryClientService } from "@/lib/services/category-client-service";
 import { Category, Subcategory } from "@/lib/types";
 import { toast } from "sonner";
@@ -238,25 +239,27 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
           /* List Mode Navigation */
           <div className='flex items-center justify-around py-2'>
             {/* Search Button */}
-            <Button variant='ghost' size='lg' onClick={() => setShowSearchOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
+            <Button variant='ghost' size='lg' onClick={() => setShowSearchOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
               <Search className='h-5 w-5' />
               <span className='text-xs font-medium'>検索</span>
             </Button>
 
+            {/* Ingredients Management Button */}
+            <Link href='/ingredients'>
+              <Button variant='ghost' size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
+                <Package className='h-5 w-5' />
+                <span className='text-xs font-medium'>材料</span>
+              </Button>
+            </Link>
+
             {/* Category Filter Button */}
-            <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
+            <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
               <Filter className='h-5 w-5' />
               <span className='text-xs font-medium'>カテゴリ</span>
             </Button>
 
-            {/* Subcategory Filter Button */}
-            <Button variant='ghost' size='lg' onClick={() => setShowSubcategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-4 hover:bg-primary/10 text-foreground'>
-              <Filter className='h-5 w-5' />
-              <span className='text-xs font-medium'>サブ</span>
-            </Button>
-
             {/* Create New Menu Button - Primary Action */}
-            <Button onClick={() => onEditMenu(null)} size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground border border-primary'>
+            <Button onClick={() => onEditMenu(null)} size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-2 bg-primary hover:bg-primary/90 text-primary-foreground border border-primary'>
               <Plus className='h-5 w-5' />
               <span className='text-xs font-medium'>新規作成</span>
             </Button>
