@@ -6,6 +6,11 @@ import { categoryClientService } from "@/lib/services/category-client-service";
 import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
 import { toast } from "@/hooks/use-toast";
 
+interface UseCategorySubcategoryProps {
+  menuId?: string | null;
+  existingSubcategory?: { id: string; categoryId: string };
+}
+
 interface UseCategorySubcategoryReturn {
   // State
   categories: Category[];
@@ -32,7 +37,9 @@ interface UseCategorySubcategoryReturn {
   isLoadingSubcategories: boolean;
 }
 
-export function useCategorySubcategory(menuId?: string | null): UseCategorySubcategoryReturn {
+export function useCategorySubcategory(props: UseCategorySubcategoryProps | string | null = {}): UseCategorySubcategoryReturn {
+  // Handle backward compatibility - if props is a string, it's the old menuId parameter
+  const { menuId, existingSubcategory } = typeof props === "string" || props === null ? { menuId: props, existingSubcategory: undefined } : props;
   // State
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -57,9 +64,14 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
           });
           setCategories([defaultCategory]);
           setCategoryId(defaultCategory.id);
-        } else if (!menuId) {
-          // Set first category as default for new menus
-          setCategoryId(fetchedCategories[0].id);
+        } else {
+          // If we have existing subcategory data from menu, set that category
+          if (existingSubcategory?.categoryId) {
+            setCategoryId(existingSubcategory.categoryId);
+          } else if (!menuId) {
+            // Set first category as default for new menus only
+            setCategoryId(fetchedCategories[0].id);
+          }
         }
       } catch (error) {
         console.error("Failed to load categories:", error);
@@ -73,7 +85,7 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
     };
 
     loadCategories();
-  }, [menuId]);
+  }, [menuId, existingSubcategory?.categoryId]);
 
   // Load subcategories when category changes
   useEffect(() => {
@@ -99,8 +111,13 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
           setSubcategories([defaultSubcategory]);
           setSubcategoryId(defaultSubcategory.id);
         } else {
-          // Always set the first subcategory when category changes
-          setSubcategoryId(fetchedSubcategories[0].id);
+          // If we have existing subcategory data from menu, set that subcategory
+          if (existingSubcategory?.id && fetchedSubcategories.some((sub) => sub.id === existingSubcategory.id)) {
+            setSubcategoryId(existingSubcategory.id);
+          } else {
+            // Set the first subcategory when category changes (for new menus or category changes)
+            setSubcategoryId(fetchedSubcategories[0].id);
+          }
         }
       } catch (error) {
         console.error("Failed to load subcategories:", error);
@@ -114,7 +131,7 @@ export function useCategorySubcategory(menuId?: string | null): UseCategorySubca
     };
 
     loadSubcategories();
-  }, [categoryId, menuId]);
+  }, [categoryId, menuId, existingSubcategory?.id]);
 
   // Category operations
   const createCategory = async (data: { name: string; description: string }) => {

@@ -7,6 +7,7 @@ import { useIngredients } from "@/hooks/use-ingredients";
 import { usePricingCalculations } from "@/hooks/use-pricing-calculations";
 import { useCategorySubcategory } from "@/hooks/use-category-subcategory";
 import { useMenuForm } from "@/hooks/use-menu-form";
+import { useMenu } from "@/hooks/use-menu-queries";
 import { MenuFormHeader } from "@/components/menu-form-header";
 import { ProductNameSection } from "@/components/product-name-section";
 import { CategorySection } from "@/components/category-section";
@@ -35,33 +36,36 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
   const [isCategoryLoading, setIsCategoryLoading] = useState(false);
 
-  // Custom hooks
-  const ingredients = useIngredients();
-  const categorySubcategory = useCategorySubcategory(menuId);
+  // Load existing menu data first
+  const { data: existingMenu, isLoading: isLoadingMenu } = useMenu(menuId || "");
+
+  // Custom hooks with existing menu data
+  const ingredients = useIngredients({
+    existingIngredients: existingMenu?.ingredients,
+  });
+
+  const categorySubcategory = useCategorySubcategory({
+    menuId,
+    existingSubcategory:
+      existingMenu?.subcategoryId && existingMenu?.categoryId
+        ? {
+            id: existingMenu.subcategoryId,
+            categoryId: existingMenu.categoryId,
+          }
+        : undefined,
+  });
+
   const menuForm = useMenuForm({
     menuId,
     ingredients: ingredients.ingredients,
     subcategoryId: categorySubcategory.subcategoryId,
     onBack,
   });
+
   const pricingCalculations = usePricingCalculations({
     totalCost: ingredients.totalCost,
     sellingPrice: menuForm.sellingPrice,
   });
-
-  // Load existing menu ingredients when editing
-  useEffect(() => {
-    const loadExistingMenuData = async () => {
-      if (menuForm.isLoadingMenu) return;
-
-      // This effect will run after useMenuForm has loaded the existing menu
-      // We need to extract ingredients from the existing menu
-      // This is a bit tricky since useMenuForm doesn't expose the menu data
-      // We'll need to adjust this logic based on the existing menu data
-    };
-
-    loadExistingMenuData();
-  }, [menuForm.isLoadingMenu]);
 
   // Handle create category
   const handleCreateCategory = async (data: { name: string; description: string }) => {

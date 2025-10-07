@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Ingredient } from "@/lib/types";
+
+interface UseIngredientsProps {
+  existingIngredients?: Ingredient[];
+}
 
 interface UseIngredientsReturn {
   ingredients: Ingredient[];
@@ -34,8 +38,15 @@ const defaultIngredients: Ingredient[] = [
   },
 ];
 
-export function useIngredients(): UseIngredientsReturn {
-  const [ingredients, setIngredients] = useState<Ingredient[]>(defaultIngredients);
+export function useIngredients({ existingIngredients }: UseIngredientsProps = {}): UseIngredientsReturn {
+  const [ingredients, setIngredients] = useState<Ingredient[]>(existingIngredients || defaultIngredients);
+
+  // Update ingredients when existingIngredients changes
+  useEffect(() => {
+    if (existingIngredients && existingIngredients.length > 0) {
+      setIngredients(existingIngredients);
+    }
+  }, [existingIngredients]);
 
   // Calculate total cost
   const totalCost = ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
