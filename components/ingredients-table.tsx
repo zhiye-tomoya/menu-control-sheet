@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { Ingredient } from "@/lib/types";
+import { getSuggestedPricingUnits } from "@/lib/unit-conversions";
 
 interface IngredientsTableProps {
   ingredients: Ingredient[];
@@ -24,29 +25,32 @@ export function IngredientsTable({ ingredients, formattedTotalCost, onUpdateIngr
         <div className='hidden sm:block overflow-x-auto'>
           <div className='min-w-[600px]'>
             {/* Table Header */}
-            <div className='grid grid-cols-12 gap-2 mb-2 bg-muted border-2 border-primary p-2 font-bold text-sm'>
+            <div className='grid grid-cols-16 gap-2 mb-2 bg-muted border-2 border-primary p-2 font-bold text-sm'>
               <div className='col-span-1 text-center'>材料No</div>
               <div className='col-span-3'>材料名</div>
-              <div className='col-span-2 text-right'>使用量</div>
-              <div className='col-span-2'>単位</div>
+              <div className='col-span-1 text-right'>使用量</div>
+              <div className='col-span-1'>単位</div>
               <div className='col-span-2 text-right'>材料単価(税別)</div>
+              <div className='col-span-1'>価格単位</div>
+              <div className='col-span-2'>換算係数</div>
               <div className='col-span-2 text-right'>原価(税別)</div>
+              <div className='col-span-2'>操作</div>
             </div>
 
             {/* Table Rows */}
             {ingredients.map((ingredient) => (
-              <div key={ingredient.id} className='grid grid-cols-12 gap-2 mb-2 items-center border-2 border-primary p-2 bg-card'>
+              <div key={ingredient.id} className='grid grid-cols-16 gap-2 mb-2 items-center border-2 border-primary p-2 bg-card'>
                 <div className='col-span-1 text-center font-medium'>{ingredient.no}</div>
                 <div className='col-span-3'>
                   <Input value={ingredient.name} onChange={(e) => onUpdateIngredient(ingredient.id, "name", e.target.value)} className='border-primary' />
                 </div>
-                <div className='col-span-2'>
-                  <Input type='number' step='1' value={ingredient.quantity} onChange={(e) => onUpdateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
+                <div className='col-span-1'>
+                  <Input type='number' step='0.1' value={ingredient.quantity} onChange={(e) => onUpdateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
                 </div>
-                <div className='col-span-2'>
+                <div className='col-span-1'>
                   <Select value={ingredient.unit} onValueChange={(value) => onUpdateIngredient(ingredient.id, "unit", value)}>
                     <SelectTrigger className='border-primary'>
-                      <SelectValue placeholder='単位を選択' />
+                      <SelectValue placeholder='単位' />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value='g'>g</SelectItem>
@@ -59,10 +63,30 @@ export function IngredientsTable({ ingredients, formattedTotalCost, onUpdateIngr
                   </Select>
                 </div>
                 <div className='col-span-2'>
-                  <Input type='number' step='1' value={ingredient.unitPrice} onChange={(e) => onUpdateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
+                  <Input type='number' step='0.01' value={ingredient.unitPrice} onChange={(e) => onUpdateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary' />
                 </div>
-                <div className='col-span-1 text-right font-medium'>¥{ingredient.totalPrice.toFixed(1)}</div>
-                <div className='col-span-1 flex justify-center'>
+                <div className='col-span-1'>
+                  <Select value={ingredient.pricingUnit || ingredient.unit} onValueChange={(value) => onUpdateIngredient(ingredient.id, "pricingUnit", value)}>
+                    <SelectTrigger className='border-primary'>
+                      <SelectValue placeholder='価格単位' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getSuggestedPricingUnits(ingredient.unit).map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {unit}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='col-span-2'>
+                  <div className='flex items-center gap-1'>
+                    <Input type='number' step='0.1' value={ingredient.conversionFactor || 1} onChange={(e) => onUpdateIngredient(ingredient.id, "conversionFactor", Number.parseFloat(e.target.value) || 1)} className='text-right border-primary' />
+                    <span className='text-xs text-muted-foreground whitespace-nowrap'>/{ingredient.pricingUnit || ingredient.unit}</span>
+                  </div>
+                </div>
+                <div className='col-span-2 text-right font-medium'>¥{ingredient.totalPrice.toFixed(1)}</div>
+                <div className='col-span-2 flex justify-center'>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant='ghost' size='icon' className='h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10'>
@@ -127,7 +151,7 @@ export function IngredientsTable({ ingredients, formattedTotalCost, onUpdateIngr
                 <div className='grid grid-cols-2 gap-3'>
                   <div>
                     <label className='text-sm font-medium text-muted-foreground mb-1 block'>使用量</label>
-                    <Input type='number' step='1' value={ingredient.quantity} onChange={(e) => onUpdateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary text-base' />
+                    <Input type='number' step='0.1' value={ingredient.quantity} onChange={(e) => onUpdateIngredient(ingredient.id, "quantity", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary text-base' />
                   </div>
                   <div>
                     <label className='text-sm font-medium text-muted-foreground mb-1 block'>単位</label>
@@ -149,7 +173,32 @@ export function IngredientsTable({ ingredients, formattedTotalCost, onUpdateIngr
 
                 <div>
                   <label className='text-sm font-medium text-muted-foreground mb-1 block'>材料単価(税別)</label>
-                  <Input type='number' step='1' value={ingredient.unitPrice} onChange={(e) => onUpdateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary text-base' />
+                  <Input type='number' step='0.01' value={ingredient.unitPrice} onChange={(e) => onUpdateIngredient(ingredient.id, "unitPrice", Number.parseFloat(e.target.value) || 0)} className='text-right border-primary text-base' />
+                </div>
+
+                <div className='grid grid-cols-2 gap-3'>
+                  <div>
+                    <label className='text-sm font-medium text-muted-foreground mb-1 block'>価格単位</label>
+                    <Select value={ingredient.pricingUnit || ingredient.unit} onValueChange={(value) => onUpdateIngredient(ingredient.id, "pricingUnit", value)}>
+                      <SelectTrigger className='border-primary text-base'>
+                        <SelectValue placeholder='価格単位' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getSuggestedPricingUnits(ingredient.unit).map((unit) => (
+                          <SelectItem key={unit} value={unit}>
+                            {unit}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className='text-sm font-medium text-muted-foreground mb-1 block'>換算係数</label>
+                    <div className='flex items-center gap-2'>
+                      <Input type='number' step='0.1' value={ingredient.conversionFactor || 1} onChange={(e) => onUpdateIngredient(ingredient.id, "conversionFactor", Number.parseFloat(e.target.value) || 1)} className='text-right border-primary text-base' />
+                      <span className='text-sm text-muted-foreground'>/{ingredient.pricingUnit || ingredient.unit}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className='bg-muted/50 rounded-lg p-3 border border-primary/20'>

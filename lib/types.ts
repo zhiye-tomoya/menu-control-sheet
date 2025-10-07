@@ -6,6 +6,9 @@ export interface Ingredient {
   unit: string;
   unitPrice: number;
   totalPrice: number;
+  // New fields for unit conversion
+  pricingUnit?: string;
+  conversionFactor?: number; // How many recipe units equal one pricing unit
 }
 
 export interface Category {

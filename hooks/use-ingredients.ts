@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Ingredient } from "@/lib/types";
+import { calculateIngredientCost, getDefaultConversionFactor } from "@/lib/unit-conversions";
 
 interface UseIngredientsProps {
   existingIngredients?: Ingredient[];
@@ -24,8 +25,10 @@ const defaultIngredients: Ingredient[] = [
     name: "コーヒー豆",
     quantity: 12.0,
     unit: "g",
-    unitPrice: 3.5,
-    totalPrice: 42.0,
+    unitPrice: 350.0, // ¥350 per bag
+    totalPrice: 16.8, // 12g ÷ 250g/bag × ¥350/bag = ¥16.8
+    pricingUnit: "袋",
+    conversionFactor: 250, // 250g per bag
   },
   {
     id: "2",
@@ -35,6 +38,8 @@ const defaultIngredients: Ingredient[] = [
     unit: "個",
     unitPrice: 15.0,
     totalPrice: 15.0,
+    pricingUnit: "個",
+    conversionFactor: 1,
   },
 ];
 
@@ -62,6 +67,8 @@ export function useIngredients({ existingIngredients }: UseIngredientsProps = {}
       unit: "g",
       unitPrice: 0,
       totalPrice: 0,
+      pricingUnit: "g",
+      conversionFactor: 1,
     };
     setIngredients((prev) => [...prev, newIngredient]);
   };
@@ -78,9 +85,27 @@ export function useIngredients({ existingIngredients }: UseIngredientsProps = {}
         if (ing.id !== id) return ing;
         const updated = { ...ing, [field]: value };
 
-        // Recalculate total price when quantity or unit price changes
-        if (field === "quantity" || field === "unitPrice") {
-          updated.totalPrice = Number(updated.quantity) * Number(updated.unitPrice);
+        // Set default pricing unit and conversion factor when recipe unit changes
+        if (field === "unit") {
+          const recipeUnit = String(value);
+          if (!updated.pricingUnit) {
+            updated.pricingUnit = recipeUnit;
+            updated.conversionFactor = 1;
+          } else {
+            // Update conversion factor if pricing unit exists
+            updated.conversionFactor = getDefaultConversionFactor(recipeUnit, updated.pricingUnit);
+          }
+        }
+
+        // Set default conversion factor when pricing unit changes
+        if (field === "pricingUnit") {
+          const pricingUnit = String(value);
+          updated.conversionFactor = getDefaultConversionFactor(updated.unit, pricingUnit);
+        }
+
+        // Recalculate total price when any pricing-related field changes
+        if (field === "quantity" || field === "unitPrice" || field === "unit" || field === "pricingUnit" || field === "conversionFactor") {
+          updated.totalPrice = calculateIngredientCost(Number(updated.quantity), updated.unit, Number(updated.unitPrice), updated.pricingUnit, Number(updated.conversionFactor));
         }
 
         return updated;
