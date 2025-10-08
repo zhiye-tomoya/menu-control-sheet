@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Ingredient } from "@/lib/types";
+import { Ingredient, RecipeIngredient } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { useSaveMenu, useMenu } from "@/hooks/use-menu-queries";
 import { subcategoryClientService } from "@/lib/services/subcategory-client-service";
 
 interface UseMenuFormProps {
   menuId: string | null;
-  ingredients: Ingredient[];
+  getRecipeIngredients: () => Omit<RecipeIngredient, "createdAt">[];
   subcategoryId: string;
   onBack: () => void;
 }
@@ -35,7 +35,7 @@ interface UseMenuFormReturn {
   validateForm: () => boolean;
 }
 
-export function useMenuForm({ menuId, ingredients, subcategoryId, onBack }: UseMenuFormProps): UseMenuFormReturn {
+export function useMenuForm({ menuId, getRecipeIngredients, subcategoryId, onBack }: UseMenuFormProps): UseMenuFormReturn {
   // Form state
   const [productName, setProductName] = useState("ブレンドコーヒー");
   const [imageUrl, setImageUrl] = useState<string>("");
@@ -88,7 +88,9 @@ export function useMenuForm({ menuId, ingredients, subcategoryId, onBack }: UseM
       return false;
     }
 
-    if (ingredients.length === 0) {
+    const currentRecipeIngredients = getRecipeIngredients();
+
+    if (currentRecipeIngredients.length === 0) {
       toast.error({
         title: "材料を追加してください",
         description: "少なくとも1つの材料を追加する必要があります。",
@@ -96,12 +98,12 @@ export function useMenuForm({ menuId, ingredients, subcategoryId, onBack }: UseM
       return false;
     }
 
-    // Check if all ingredients have names
-    const emptyIngredients = ingredients.filter((ing) => !ing.name.trim());
-    if (emptyIngredients.length > 0) {
+    // Check if all ingredients have valid quantities
+    const invalidIngredients = currentRecipeIngredients.filter((ri) => ri.quantity <= 0);
+    if (invalidIngredients.length > 0) {
       toast.error({
-        title: "材料名を入力してください",
-        description: "すべての材料に名前を入力してください。",
+        title: "材料の使用量を正しく入力してください",
+        description: "すべての材料に0より大きい使用量を入力してください。",
       });
       return false;
     }
@@ -128,7 +130,7 @@ export function useMenuForm({ menuId, ingredients, subcategoryId, onBack }: UseM
         name: productName.trim(),
         imageUrl: imageUrl,
         subcategoryId: subcategoryId,
-        ingredients: ingredients,
+        recipeIngredients: getRecipeIngredients(),
         sellingPrice: sellingPrice,
       };
 

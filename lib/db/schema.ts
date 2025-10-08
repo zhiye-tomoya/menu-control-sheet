@@ -55,11 +55,9 @@ export const menus = pgTable("menus", {
   subcategoryId: text("subcategory_id")
     .notNull()
     .references(() => subcategories.id),
-  // Keep ingredients field for backward compatibility during transition
-  ingredients: jsonb("ingredients").default("[]"),
   sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
   totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(),
-  costRate: decimal("cost_rate", { precision: 8, scale: 2 }).notNull(),
+  costRate: decimal("cost_rate", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

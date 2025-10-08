@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { useIngredients } from "@/hooks/use-ingredients";
+import { useMenuIngredients } from "@/hooks/use-menu-ingredients";
 import { usePricingCalculations } from "@/hooks/use-pricing-calculations";
 import { useCategorySubcategory } from "@/hooks/use-category-subcategory";
 import { useMenuForm } from "@/hooks/use-menu-form";
@@ -13,7 +13,7 @@ import { ProductNameSection } from "@/components/product-name-section";
 import { CategorySection } from "@/components/category-section";
 import { SubcategorySection } from "@/components/subcategory-section";
 import { ImageUploadSection } from "@/components/image-upload-section";
-import { IngredientsTable } from "@/components/ingredients-table";
+import { MenuIngredientsTable } from "@/components/menu-ingredients-table";
 import { PricingSection } from "@/components/pricing-section";
 import { MenuFormActions } from "@/components/menu-form-actions";
 import { CategoryDialog } from "@/components/category-dialog";
@@ -40,8 +40,8 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
   const { data: existingMenu, isLoading: isLoadingMenu } = useMenu(menuId || "");
 
   // Custom hooks with existing menu data
-  const ingredients = useIngredients({
-    existingIngredients: existingMenu?.ingredients,
+  const menuIngredients = useMenuIngredients({
+    existingRecipeIngredients: existingMenu?.recipeIngredients,
   });
 
   const categorySubcategory = useCategorySubcategory({
@@ -57,13 +57,13 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
 
   const menuForm = useMenuForm({
     menuId,
-    ingredients: ingredients.ingredients,
+    getRecipeIngredients: menuIngredients.getRecipeIngredients,
     subcategoryId: categorySubcategory.subcategoryId,
     onBack,
   });
 
   const pricingCalculations = usePricingCalculations({
-    totalCost: ingredients.totalCost,
+    totalCost: menuIngredients.totalCost,
     sellingPrice: menuForm.sellingPrice,
   });
 
@@ -131,7 +131,7 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
   // Handle reset with ingredients
   const handleReset = () => {
     menuForm.handleReset();
-    ingredients.resetIngredients();
+    menuIngredients.resetIngredients();
   };
 
   return (
@@ -155,8 +155,8 @@ export function MenuControlSheet({ menuId, onBack }: MenuControlSheetProps) {
             {/* Image Upload Section */}
             <ImageUploadSection imageUrl={menuForm.imageUrl} onImageUpload={menuForm.handleImageUpload} />
 
-            {/* Ingredients Table */}
-            <IngredientsTable ingredients={ingredients.ingredients} formattedTotalCost={pricingCalculations.formattedTotalCost} onUpdateIngredient={ingredients.updateIngredient} onAddIngredient={ingredients.addIngredient} onRemoveIngredient={ingredients.removeIngredient} />
+            {/* Menu Ingredients Table */}
+            <MenuIngredientsTable menuIngredients={menuIngredients.menuIngredients} totalCost={menuIngredients.totalCost} selectedIngredientIds={menuIngredients.selectedIngredientIds} onAddIngredientFromDatabase={menuIngredients.addIngredientFromDatabase} onUpdateQuantity={menuIngredients.updateIngredientQuantity} onRemoveIngredient={menuIngredients.removeIngredient} />
           </div>
 
           {/* Pricing Section */}

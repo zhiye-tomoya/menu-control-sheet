@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, isDatabaseEnabled } from "@/lib/db/connection";
-import { menus, subcategories } from "@/lib/db/schema";
+import { menus, subcategories, menuIngredients, ingredients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { UpdateMenuInput } from "@/lib/types";
 
@@ -11,7 +11,16 @@ function calculateMenuValues(input: UpdateMenuInput): {
 } {
   // Handle both legacy ingredients array and new normalized structure
   const ingredients = input.ingredients || [];
-  const totalCost = ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
+  const recipeIngredients = input.recipeIngredients || [];
+
+  // Calculate from legacy format
+  const legacyTotalCost = ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
+
+  // Calculate from new format
+  const newTotalCost = recipeIngredients.reduce((sum, ri) => sum + ri.calculatedCost, 0);
+
+  // Use whichever has data
+  const totalCost = newTotalCost > 0 ? newTotalCost : legacyTotalCost;
   const costRate = input.sellingPrice > 0 ? (totalCost / input.sellingPrice) * 100 : 0;
 
   return { totalCost, costRate };
@@ -28,12 +37,61 @@ export async function GET(request: Request, { params }: { params: { id: string }
       }
 
       const menu = result[0];
+
+      // Fetch menu ingredients from the normalized table
+      const menuIngredientsList = await db
+        .select({
+          id: menuIngredients.id,
+          ingredientId: menuIngredients.ingredientId,
+          quantity: menuIngredients.quantity,
+          calculatedCost: menuIngredients.calculatedCost,
+          createdAt: menuIngredients.createdAt,
+          ingredient: {
+            id: ingredients.id,
+            name: ingredients.name,
+            defaultUnit: ingredients.defaultUnit,
+            pricingUnit: ingredients.pricingUnit,
+            conversionFactor: ingredients.conversionFactor,
+            currentPrice: ingredients.currentPrice,
+            category: ingredients.category,
+            description: ingredients.description,
+            createdAt: ingredients.createdAt,
+            updatedAt: ingredients.updatedAt,
+          },
+        })
+        .from(menuIngredients)
+        .leftJoin(ingredients, eq(menuIngredients.ingredientId, ingredients.id))
+        .where(eq(menuIngredients.menuId, params.id));
+
+      // Format the recipe ingredients
+      const recipeIngredients = menuIngredientsList.map((mi) => ({
+        id: mi.id,
+        ingredientId: mi.ingredientId,
+        quantity: Number(mi.quantity),
+        calculatedCost: Number(mi.calculatedCost),
+        createdAt: mi.createdAt?.toISOString() || new Date().toISOString(),
+        ingredient: mi.ingredient
+          ? {
+              id: mi.ingredient.id,
+              name: mi.ingredient.name,
+              defaultUnit: mi.ingredient.defaultUnit,
+              pricingUnit: mi.ingredient.pricingUnit,
+              conversionFactor: Number(mi.ingredient.conversionFactor),
+              currentPrice: Number(mi.ingredient.currentPrice),
+              category: mi.ingredient.category,
+              description: mi.ingredient.description,
+              createdAt: mi.ingredient.createdAt?.toISOString() || new Date().toISOString(),
+              updatedAt: mi.ingredient.updatedAt?.toISOString() || new Date().toISOString(),
+            }
+          : undefined,
+      }));
+
       const formattedMenu = {
         ...menu,
         totalCost: Number(menu.totalCost),
         sellingPrice: Number(menu.sellingPrice),
         costRate: Number(menu.costRate),
-        ingredients: menu.ingredients as any,
+        recipeIngredients: recipeIngredients, // Normalized format
       };
 
       return NextResponse.json(formattedMenu);
@@ -69,7 +127,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         imageUrl: input.imageUrl || "",
         categoryId: categoryId,
         subcategoryId: input.subcategoryId,
-        ingredients: input.ingredients || [],
         sellingPrice: input.sellingPrice.toFixed(2),
         totalCost: totalCost.toFixed(2),
         costRate: costRate.toFixed(2),
@@ -78,7 +135,27 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
       await db.update(menus).set(updatedMenu).where(eq(menus.id, params.id));
 
-      // Fetch and return the updated menu
+      // Update recipe ingredients in normalized table if provided
+      if (input.recipeIngredients) {
+        // Delete existing menu ingredients
+        await db.delete(menuIngredients).where(eq(menuIngredients.menuId, params.id));
+
+        // Insert new menu ingredients
+        if (input.recipeIngredients.length > 0) {
+          const menuIngredientsToInsert = input.recipeIngredients.map((ri) => ({
+            id: ri.id,
+            menuId: params.id,
+            ingredientId: ri.ingredientId,
+            quantity: ri.quantity.toString(),
+            calculatedCost: ri.calculatedCost.toFixed(2),
+            createdAt: new Date(),
+          }));
+
+          await db.insert(menuIngredients).values(menuIngredientsToInsert);
+        }
+      }
+
+      // Fetch and return the updated menu with ingredients
       const result = await db.select().from(menus).where(eq(menus.id, params.id));
 
       if (result.length === 0) {
@@ -86,12 +163,61 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }
 
       const menu = result[0];
+
+      // Fetch updated menu ingredients
+      const menuIngredientsList = await db
+        .select({
+          id: menuIngredients.id,
+          ingredientId: menuIngredients.ingredientId,
+          quantity: menuIngredients.quantity,
+          calculatedCost: menuIngredients.calculatedCost,
+          createdAt: menuIngredients.createdAt,
+          ingredient: {
+            id: ingredients.id,
+            name: ingredients.name,
+            defaultUnit: ingredients.defaultUnit,
+            pricingUnit: ingredients.pricingUnit,
+            conversionFactor: ingredients.conversionFactor,
+            currentPrice: ingredients.currentPrice,
+            category: ingredients.category,
+            description: ingredients.description,
+            createdAt: ingredients.createdAt,
+            updatedAt: ingredients.updatedAt,
+          },
+        })
+        .from(menuIngredients)
+        .leftJoin(ingredients, eq(menuIngredients.ingredientId, ingredients.id))
+        .where(eq(menuIngredients.menuId, params.id));
+
+      // Format the recipe ingredients
+      const recipeIngredients = menuIngredientsList.map((mi) => ({
+        id: mi.id,
+        ingredientId: mi.ingredientId,
+        quantity: Number(mi.quantity),
+        calculatedCost: Number(mi.calculatedCost),
+        createdAt: mi.createdAt?.toISOString() || new Date().toISOString(),
+        ingredient: mi.ingredient
+          ? {
+              id: mi.ingredient.id,
+              name: mi.ingredient.name,
+              defaultUnit: mi.ingredient.defaultUnit,
+              pricingUnit: mi.ingredient.pricingUnit,
+              conversionFactor: Number(mi.ingredient.conversionFactor),
+              currentPrice: Number(mi.ingredient.currentPrice),
+              category: mi.ingredient.category,
+              description: mi.ingredient.description,
+              createdAt: mi.ingredient.createdAt?.toISOString() || new Date().toISOString(),
+              updatedAt: mi.ingredient.updatedAt?.toISOString() || new Date().toISOString(),
+            }
+          : undefined,
+      }));
+
       const formattedMenu = {
         ...menu,
         totalCost: Number(menu.totalCost),
         sellingPrice: Number(menu.sellingPrice),
         costRate: Number(menu.costRate),
-        ingredients: menu.ingredients as any,
+        recipeIngredients: recipeIngredients,
       };
 
       return NextResponse.json(formattedMenu);

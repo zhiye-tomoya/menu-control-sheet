@@ -94,7 +94,7 @@ export interface CreateMenuInput {
   subcategoryId: string;
   // Support both new and legacy format
   ingredients?: Ingredient[]; // legacy
-  recipeIngredients?: RecipeIngredient[]; // new normalized
+  recipeIngredients?: Omit<RecipeIngredient, "createdAt">[]; // new normalized
   sellingPrice: number;
 }
 

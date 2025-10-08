@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, isDatabaseEnabled } from "@/lib/db/connection";
-import { menus, subcategories } from "@/lib/db/schema";
+import { menus, subcategories, menuIngredients, ingredients } from "@/lib/db/schema";
 import { CreateMenuInput, MenuData, MenuItem } from "@/lib/types";
 import { eq } from "drizzle-orm";
 
@@ -13,7 +13,16 @@ function calculateMenuValues(input: CreateMenuInput): {
 } {
   // Handle both legacy ingredients array and new normalized structure
   const ingredients = input.ingredients || [];
-  const totalCost = ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
+  const recipeIngredients = input.recipeIngredients || [];
+
+  // Calculate from legacy format
+  const legacyTotalCost = ingredients.reduce((sum, ing) => sum + ing.totalPrice, 0);
+
+  // Calculate from new format
+  const newTotalCost = recipeIngredients.reduce((sum, ri) => sum + ri.calculatedCost, 0);
+
+  // Use whichever has data
+  const totalCost = newTotalCost > 0 ? newTotalCost : legacyTotalCost;
   const costRate = input.sellingPrice > 0 ? (totalCost / input.sellingPrice) * 100 : 0;
 
   return { totalCost, costRate };
@@ -130,13 +139,14 @@ export async function POST(request: Request) {
 
       const categoryId = subcategoryResult[0].categoryId;
 
+      const menuId = Date.now().toString();
+
       const newMenu = {
-        id: Date.now().toString(),
+        id: menuId,
         name: input.name,
         imageUrl: input.imageUrl || "",
         categoryId: categoryId,
         subcategoryId: input.subcategoryId,
-        ingredients: input.ingredients || [],
         sellingPrice: input.sellingPrice.toFixed(2),
         totalCost: totalCost.toFixed(2),
         costRate: costRate.toFixed(2),
@@ -144,7 +154,22 @@ export async function POST(request: Request) {
         updatedAt: new Date(),
       };
 
+      // Save menu first
       await db.insert(menus).values(newMenu);
+
+      // Save recipe ingredients to normalized table if provided
+      if (input.recipeIngredients && input.recipeIngredients.length > 0) {
+        const menuIngredientsToInsert = input.recipeIngredients.map((ri) => ({
+          id: ri.id,
+          menuId: menuId,
+          ingredientId: ri.ingredientId,
+          quantity: ri.quantity.toString(),
+          calculatedCost: ri.calculatedCost.toFixed(2),
+          createdAt: new Date(),
+        }));
+
+        await db.insert(menuIngredients).values(menuIngredientsToInsert);
+      }
 
       const responseMenu = {
         ...newMenu,
