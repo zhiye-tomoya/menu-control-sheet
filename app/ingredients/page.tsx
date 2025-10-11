@@ -1,9 +1,43 @@
+"use client";
+
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home } from "lucide-react";
 import { IngredientsManagement } from "@/components/ingredients-management";
 
 export default function IngredientsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "loading") return; // Still loading
+
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+      return;
+    }
+  }, [status, router]);
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900'></div>
+          <p className='mt-4'>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (status === "unauthenticated") {
+    return null;
+  }
+
   return (
     <div className='p-4 md:p-0 min-h-screen bg-background'>
       {/* Navigation Header */}
