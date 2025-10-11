@@ -28,9 +28,9 @@ export const ingredients = pgTable("ingredients", {
   currentPrice: decimal("current_price", { precision: 10, scale: 2 }).notNull(),
   category: text("category").default(""), // dairy, proteins, vegetables, etc.
   description: text("description").default(""),
-  organizationId: text("organization_id")
+  shopId: text("shop_id")
     .notNull()
-    .references(() => organizations.id),
+    .references(() => shops.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -21,7 +21,7 @@ export interface CreateIngredientInput {
   pricingUnit: string;
   conversionFactor: number;
   currentPrice: number;
-  organizationId: string;
+  shopId: string;
   category?: string;
   description?: string;
 }
@@ -94,7 +94,7 @@ export class IngredientService {
       pricingUnit: input.pricingUnit,
       conversionFactor: String(input.conversionFactor),
       currentPrice: String(input.currentPrice),
-      organizationId: input.organizationId,
+      shopId: input.shopId,
       category: input.category?.trim() || "",
       description: input.description?.trim() || "",
     };

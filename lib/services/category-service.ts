@@ -3,26 +3,10 @@ import { categories } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { Category, CreateCategoryInput, UpdateCategoryInput } from "../types";
 
-const STORAGE_KEY = "menu-control-categories";
-
-// LocalStorage functions
-const getFromStorage = (): Category[] => {
-  if (typeof window === "undefined") return [];
-  const saved = localStorage.getItem(STORAGE_KEY);
-  return saved ? JSON.parse(saved) : [];
-};
-
-const saveToStorage = (data: Category[]) => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-};
-
 export class CategoryService {
   static async getAllCategories(): Promise<Category[]> {
     if (!isDatabaseEnabled || !db) {
-      // Fallback to localStorage
-      return getFromStorage().sort((a, b) => a.name.localeCompare(b.name));
+      throw new Error("Database not configured");
     }
 
     try {
@@ -51,9 +35,7 @@ export class CategoryService {
 
   static async getCategoryById(id: string): Promise<Category | null> {
     if (!isDatabaseEnabled || !db) {
-      // Fallback to localStorage
-      const categories = getFromStorage();
-      return categories.find((cat) => cat.id === id) || null;
+      throw new Error("Database not configured");
     }
 
     try {
@@ -87,24 +69,12 @@ export class CategoryService {
   }
 
   static async createCategory(input: CreateCategoryInput): Promise<Category> {
+    if (!isDatabaseEnabled || !db) {
+      throw new Error("Database not configured");
+    }
+
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-
-    const newCategory: Category = {
-      id,
-      name: input.name,
-      description: input.description || "",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    if (!isDatabaseEnabled || !db) {
-      // Fallback to localStorage
-      const categories = getFromStorage();
-      categories.push(newCategory);
-      saveToStorage(categories);
-      return newCategory;
-    }
 
     try {
       const dbCategory = {
@@ -117,7 +87,13 @@ export class CategoryService {
 
       await db.insert(categories).values(dbCategory);
 
-      return newCategory;
+      return {
+        id,
+        name: input.name,
+        description: input.description || "",
+        createdAt: now,
+        updatedAt: now,
+      };
     } catch (error) {
       console.error("Failed to create category:", error);
       throw new Error("Failed to create category");
@@ -125,36 +101,8 @@ export class CategoryService {
   }
 
   static async updateCategory(input: UpdateCategoryInput): Promise<Category> {
-    console.log("CategoryService.updateCategory called with:", input);
-    console.log("isDatabaseEnabled:", isDatabaseEnabled);
-    console.log("db:", !!db);
-
-    const now = new Date().toISOString();
-
     if (!isDatabaseEnabled || !db) {
-      console.log("Using localStorage fallback for category update");
-      // Fallback to localStorage
-      const categories = getFromStorage();
-      console.log("Current categories from storage:", categories.length);
-      const categoryIndex = categories.findIndex((cat) => cat.id === input.id);
-      console.log("Found category at index:", categoryIndex);
-
-      if (categoryIndex === -1) {
-        console.error("Category not found in localStorage:", input.id);
-        throw new Error("Category not found");
-      }
-
-      const updatedCategory: Category = {
-        ...categories[categoryIndex],
-        name: input.name,
-        description: input.description || "",
-        updatedAt: now,
-      };
-
-      categories[categoryIndex] = updatedCategory;
-      saveToStorage(categories);
-      console.log("Updated category saved to localStorage:", updatedCategory);
-      return updatedCategory;
+      throw new Error("Database not configured");
     }
 
     try {
@@ -222,14 +170,7 @@ export class CategoryService {
 
   static async deleteCategory(id: string): Promise<boolean> {
     if (!isDatabaseEnabled || !db) {
-      // Fallback to localStorage
-      const categories = getFromStorage();
-      const filteredCategories = categories.filter((cat) => cat.id !== id);
-      const wasDeleted = filteredCategories.length < categories.length;
-      if (wasDeleted) {
-        saveToStorage(filteredCategories);
-      }
-      return wasDeleted;
+      throw new Error("Database not configured");
     }
 
     try {

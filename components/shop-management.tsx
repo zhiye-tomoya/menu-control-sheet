@@ -80,6 +80,21 @@ export function ShopManagement({ organizationId, userId, isAdmin, shops, onShops
     }
   };
 
+  const handleManageShop = (shop: Shop) => {
+    // Navigate to ingredients page with shop context
+    const shopUrl = `/ingredients?shop=${encodeURIComponent(shop.name)}&shopId=${shop.id}`;
+
+    toast({
+      title: `Opening ${shop.name}`,
+      description: "Redirecting to ingredient management for this shop...",
+    });
+
+    // Redirect to ingredients page with shop filter
+    setTimeout(() => {
+      window.location.href = shopUrl;
+    }, 1000);
+  };
+
   return (
     <div className='space-y-6'>
       {/* Create Shop Dialog */}
@@ -162,7 +177,7 @@ export function ShopManagement({ organizationId, userId, isAdmin, shops, onShops
               <CardFooter>
                 <div className='w-full'>
                   <p className='text-xs text-gray-400 mb-2'>Shop ID: {shop.id}</p>
-                  <Button variant='outline' size='sm' className='w-full'>
+                  <Button variant='outline' size='sm' className='w-full' onClick={() => handleManageShop(shop)}>
                     Manage Shop
                   </Button>
                 </div>

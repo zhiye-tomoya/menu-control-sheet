@@ -96,13 +96,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
       return NextResponse.json(formattedMenu);
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error fetching menu:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -222,13 +220,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
       return NextResponse.json(formattedMenu);
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error updating menu:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -239,12 +235,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       await db.delete(menus).where(eq(menus.id, params.id));
       return NextResponse.json({ success: true });
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error deleting menu:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }

@@ -1,4 +1,4 @@
-import { NextAuthConfig } from "next-auth";
+import NextAuth, { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db/connection";
@@ -15,40 +15,49 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password || !db) {
+        try {
+          if (!credentials?.email || !credentials?.password || !db) {
+            console.log("Missing credentials or database connection");
+            return null;
+          }
+
+          const user = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, credentials.email as string))
+            .limit(1)
+            .then((rows) => rows[0] || null);
+
+          if (!user) {
+            console.log("User not found:", credentials.email);
+            return null;
+          }
+
+          const isValidPassword = await bcrypt.compare(credentials.password as string, user.hashedPassword);
+
+          if (!isValidPassword) {
+            console.log("Invalid password for user:", credentials.email);
+            return null;
+          }
+
+          // Get user's shops
+          const userShopsData = await db.select({ shopId: userShops.shopId }).from(userShops).where(eq(userShops.userId, user.id));
+
+          const shopIds = userShopsData.map((us) => us.shopId);
+
+          console.log("Successfully authenticated user:", user.email);
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            organizationId: user.organizationId,
+            isAdmin: user.isAdmin,
+            shopIds,
+          };
+        } catch (error) {
+          console.error("Authentication error:", error);
           return null;
         }
-
-        const user = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, credentials.email as string))
-          .limit(1)
-          .then((rows) => rows[0] || null);
-
-        if (!user) {
-          return null;
-        }
-
-        const isValidPassword = await bcrypt.compare(credentials.password as string, user.hashedPassword);
-
-        if (!isValidPassword) {
-          return null;
-        }
-
-        // Get user's shops
-        const userShopsData = await db.select({ shopId: userShops.shopId }).from(userShops).where(eq(userShops.userId, user.id));
-
-        const shopIds = userShopsData.map((us) => us.shopId);
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          organizationId: user.organizationId,
-          isAdmin: user.isAdmin,
-          shopIds,
-        };
       },
     }),
   ],

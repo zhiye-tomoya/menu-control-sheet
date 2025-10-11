@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import { IngredientForm } from "./ingredient-form";
 import { IngredientsMobileBottomNavigation } from "./ingredients-mobile-bottom-navigation";
 
-export function IngredientsManagement() {
+interface IngredientsManagementProps {
+  isAdmin?: boolean;
+}
+
+export function IngredientsManagement({ isAdmin = false }: IngredientsManagementProps) {
   const [ingredients, setIngredients] = useState<IngredientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -25,6 +30,10 @@ export function IngredientsManagement() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
 
+  // Get URL parameters
+  const searchParams = useSearchParams();
+  const shopId = searchParams.get("shopId");
+
   // Load ingredients
   const loadIngredients = async () => {
     try {
@@ -32,6 +41,7 @@ export function IngredientsManagement() {
       const data = await IngredientClientService.getAll({
         search: search || undefined,
         category: categoryFilter === "all" ? undefined : categoryFilter,
+        shopId: shopId || undefined,
       });
       setIngredients(data);
 
@@ -51,7 +61,7 @@ export function IngredientsManagement() {
 
   useEffect(() => {
     loadIngredients();
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, shopId]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -111,7 +121,7 @@ export function IngredientsManagement() {
                 <DialogHeader>
                   <DialogTitle>材料を追加</DialogTitle>
                 </DialogHeader>
-                <IngredientForm onSave={handleSave} onCancel={() => setShowAddDialog(false)} />
+                <IngredientForm shopId={shopId || undefined} onSave={handleSave} onCancel={() => setShowAddDialog(false)} />
               </DialogContent>
             </Dialog>
           </div>
@@ -253,7 +263,7 @@ export function IngredientsManagement() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <IngredientsMobileBottomNavigation onAddIngredient={() => setShowAddDialog(true)} />
+      <IngredientsMobileBottomNavigation onAddIngredient={() => setShowAddDialog(true)} isAdmin={isAdmin} />
     </>
   );
 }

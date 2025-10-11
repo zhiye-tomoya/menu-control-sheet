@@ -3,7 +3,7 @@
 import { IngredientData, CreateIngredientInput, UpdateIngredientInput, IngredientFilters } from "./ingredient-service";
 
 export class IngredientClientService {
-  static async getAll(filters?: IngredientFilters): Promise<IngredientData[]> {
+  static async getAll(filters?: IngredientFilters & { shopId?: string }): Promise<IngredientData[]> {
     const params = new URLSearchParams();
 
     if (filters?.search) {
@@ -12,6 +12,10 @@ export class IngredientClientService {
 
     if (filters?.category) {
       params.append("category", filters.category);
+    }
+
+    if (filters?.shopId) {
+      params.append("shopId", filters.shopId);
     }
 
     const response = await fetch(`/api/ingredients?${params.toString()}`);

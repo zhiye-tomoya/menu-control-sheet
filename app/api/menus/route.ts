@@ -4,8 +4,6 @@ import { menus, subcategories, menuIngredients, ingredients } from "@/lib/db/sch
 import { CreateMenuInput, MenuData, MenuItem } from "@/lib/types";
 import { eq } from "drizzle-orm";
 
-const STORAGE_KEY = "menu-control-menus";
-
 // Helper function to calculate derived values
 function calculateMenuValues(input: CreateMenuInput): {
   totalCost: number;
@@ -28,43 +26,41 @@ function calculateMenuValues(input: CreateMenuInput): {
   return { totalCost, costRate };
 }
 
-// LocalStorage fallback functions (for server-side localStorage simulation)
-const getFromStorage = (): MenuData[] => {
-  if (typeof window === "undefined") {
-    // Server-side: return empty array (in real app, you'd use a server-side storage)
-    return [];
-  }
-  const saved = localStorage.getItem(STORAGE_KEY);
-  return saved ? JSON.parse(saved) : [];
-};
-
-const saveToStorage = (data: MenuData[]) => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-};
-
 // GET /api/menus - Get all menus with optional pagination
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "0"); // 0 means no pagination
+    const shopId = searchParams.get("shopId");
     const offset = limit > 0 ? (page - 1) * limit : 0;
 
     if (isDatabaseEnabled && db) {
       // Use database
 
-      // Get total count for pagination info
-      const totalCountResult = await db.select().from(menus);
+      // Get total count for pagination info - with shop filter if provided
+      let totalCountResult;
+      if (shopId) {
+        totalCountResult = await db.select().from(menus).where(eq(menus.shopId, shopId));
+      } else {
+        totalCountResult = await db.select().from(menus);
+      }
       const total = totalCountResult.length;
 
-      // Apply pagination if limit is specified
+      // Apply pagination and shop filter if specified
       let result;
-      if (limit > 0) {
-        result = await db.select().from(menus).limit(limit).offset(offset);
+      if (shopId) {
+        if (limit > 0) {
+          result = await db.select().from(menus).where(eq(menus.shopId, shopId)).limit(limit).offset(offset);
+        } else {
+          result = await db.select().from(menus).where(eq(menus.shopId, shopId));
+        }
       } else {
-        result = await db.select().from(menus);
+        if (limit > 0) {
+          result = await db.select().from(menus).limit(limit).offset(offset);
+        } else {
+          result = await db.select().from(menus);
+        }
       }
       const formattedMenus = result.map((menu) => ({
         id: menu.id,
@@ -75,6 +71,7 @@ export async function GET(request: Request) {
         totalCost: Number(menu.totalCost),
         sellingPrice: Number(menu.sellingPrice),
         costRate: Number(menu.costRate),
+        shopId: menu.shopId,
         createdAt: menu.createdAt,
         updatedAt: menu.updatedAt,
       }));
@@ -98,26 +95,11 @@ export async function GET(request: Request) {
         return NextResponse.json(formattedMenus);
       }
     } else {
-      // Fallback to empty array (client-side localStorage will be used instead)
-      if (limit > 0) {
-        return NextResponse.json({
-          data: [],
-          pagination: {
-            page: 1,
-            limit,
-            total: 0,
-            totalPages: 0,
-            hasNext: false,
-            hasPrev: false,
-          },
-        });
-      }
-      return NextResponse.json([]);
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error fetching menus:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Failed to fetch menus" }, { status: 500 });
   }
 }
 
@@ -181,12 +163,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json(responseMenu);
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error creating menu:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Failed to create menu" }, { status: 500 });
   }
 }

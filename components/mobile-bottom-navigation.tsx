@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FolderPlus, Search, Loader2, Filter, ArrowLeft, Save, RotateCcw, Package } from "lucide-react";
+import { Plus, FolderPlus, Search, Loader2, Filter, ArrowLeft, Save, RotateCcw, Package, Settings } from "lucide-react";
 import Link from "next/link";
 import { categoryClientService } from "@/lib/services/category-client-service";
 import { Category, Subcategory } from "@/lib/types";
@@ -31,9 +32,15 @@ interface MobileBottomNavigationProps {
   onReset?: () => void;
   isSaving?: boolean;
   isLoadingMenu?: boolean;
+  // Admin props
+  isAdmin?: boolean;
 }
 
-export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange, categories, onCategoryCreated, selectedCategoryId, onCategoryChange, subcategories, selectedSubcategoryId, onSubcategoryChange, isEditMode = false, onBack, onSave, onReset, isSaving, isLoadingMenu }: MobileBottomNavigationProps) {
+export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange, categories, onCategoryCreated, selectedCategoryId, onCategoryChange, subcategories, selectedSubcategoryId, onSubcategoryChange, isEditMode = false, onBack, onSave, onReset, isSaving, isLoadingMenu, isAdmin = false }: MobileBottomNavigationProps) {
+  // Get URL parameters to preserve shopId
+  const searchParams = useSearchParams();
+  const shopId = searchParams.get("shopId");
+
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
@@ -41,6 +48,14 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [showCategoryOverlay, setShowCategoryOverlay] = useState(false);
   const [showSubcategoryOverlay, setShowSubcategoryOverlay] = useState(false);
+
+  // Helper to build URLs with shopId
+  const buildUrl = (basePath: string) => {
+    if (shopId) {
+      return `${basePath}?shopId=${encodeURIComponent(shopId)}`;
+    }
+    return basePath;
+  };
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -245,18 +260,30 @@ export function MobileBottomNavigation({ onEditMenu, searchTerm, onSearchChange,
             </Button>
 
             {/* Ingredients Management Button */}
-            <Link href='/ingredients'>
+            <Link href={buildUrl("/ingredients")}>
               <Button variant='ghost' size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
                 <Package className='h-5 w-5' />
                 <span className='text-xs font-medium'>材料</span>
               </Button>
             </Link>
 
-            {/* Category Filter Button */}
-            <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
-              <Filter className='h-5 w-5' />
-              <span className='text-xs font-medium'>カテゴリ</span>
-            </Button>
+            {/* Admin Dashboard Button - Only show for admin users */}
+            {isAdmin && (
+              <Link href={buildUrl("/dashboard")}>
+                <Button variant='ghost' size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
+                  <Settings className='h-5 w-5' />
+                  <span className='text-xs font-medium'>管理</span>
+                </Button>
+              </Link>
+            )}
+
+            {/* Category Filter Button - Only show if not admin or if there's space */}
+            {!isAdmin && (
+              <Button variant='ghost' size='lg' onClick={() => setShowCategoryOverlay(true)} className='flex flex-col items-center gap-1 h-auto py-3 px-2 hover:bg-primary/10 text-foreground'>
+                <Filter className='h-5 w-5' />
+                <span className='text-xs font-medium'>カテゴリ</span>
+              </Button>
+            )}
 
             {/* Create New Menu Button - Primary Action */}
             <Button onClick={() => onEditMenu(null)} size='lg' className='flex flex-col items-center gap-1 h-auto py-3 px-2 bg-primary hover:bg-primary/90 text-primary-foreground border border-primary'>

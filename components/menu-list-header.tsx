@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, FolderPlus, Package } from "lucide-react";
+import { Search, Plus, FolderPlus, Package, Settings } from "lucide-react";
 import Link from "next/link";
 
 interface MenuListHeaderProps {
@@ -10,9 +10,10 @@ interface MenuListHeaderProps {
   onSearchChange: (term: string) => void;
   onCreateMenu: () => void;
   onCreateCategory: () => void;
+  isAdmin?: boolean;
 }
 
-export function MenuListHeader({ searchTerm, onSearchChange, onCreateMenu, onCreateCategory }: MenuListHeaderProps) {
+export function MenuListHeader({ searchTerm, onSearchChange, onCreateMenu, onCreateCategory, isAdmin = false }: MenuListHeaderProps) {
   return (
     <div className='border-b-2 sm:border-b-4 border-primary bg-card p-4 sm:p-6 sm:sticky sm:top-0 sm:z-50'>
       <h1 className='text-2xl sm:text-3xl font-bold text-center text-foreground mb-4'>メニュー管理</h1>
@@ -24,6 +25,15 @@ export function MenuListHeader({ searchTerm, onSearchChange, onCreateMenu, onCre
           <Input placeholder='メニューを検索...' value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} className='pl-10 border-2 border-primary' />
         </div>
         <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
+          {/* Admin Dashboard Button - Only show for admin users */}
+          {isAdmin && (
+            <Link href='/dashboard'>
+              <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent w-full sm:w-auto'>
+                <Settings className='h-4 w-4 mr-2' />
+                管理ダッシュボード
+              </Button>
+            </Link>
+          )}
           <Link href='/ingredients'>
             <Button variant='outline' size='lg' className='border-2 border-primary hover:bg-muted bg-transparent w-full sm:w-auto'>
               <Package className='h-4 w-4 mr-2' />

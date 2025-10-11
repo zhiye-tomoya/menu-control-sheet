@@ -19,8 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json(category);
   } catch (error) {
     console.error("Failed to fetch category:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -48,8 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json(updatedCategory);
   } catch (error) {
     console.error("Failed to update category:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -69,7 +67,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to delete category:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }

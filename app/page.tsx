@@ -48,5 +48,8 @@ export default function Home() {
     return null;
   }
 
-  return <main className='min-h-screen bg-background py-8 px-4 pb-20 sm:pb-8'>{currentView === "list" ? <MenuList onEditMenu={handleEditMenu} /> : <MenuControlSheet menuId={editingMenuId} onBack={handleBackToList} />}</main>;
+  // Check if user is admin from session
+  const isAdmin = session?.user?.isAdmin === true;
+
+  return <main className='min-h-screen bg-background py-8 px-4 pb-20 sm:pb-8'>{currentView === "list" ? <MenuList onEditMenu={handleEditMenu} isAdmin={isAdmin} /> : <MenuControlSheet menuId={editingMenuId} onBack={handleBackToList} />}</main>;
 }

@@ -14,8 +14,7 @@ export async function GET() {
     return NextResponse.json(categories);
   } catch (error) {
     console.error("Failed to fetch categories:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newCategory, { status: 201 });
   } catch (error) {
     console.error("Failed to create category:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
   }
 }

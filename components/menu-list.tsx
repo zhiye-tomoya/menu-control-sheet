@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calculator, Loader2, Plus } from "lucide-react";
@@ -19,9 +20,19 @@ import { CategoryDialog } from "@/components/category-dialog";
 
 interface MenuListProps {
   onEditMenu: (menuId: string | null) => void;
+  isAdmin?: boolean;
 }
 
-export function MenuList({ onEditMenu }: MenuListProps) {
+export function MenuList({ onEditMenu, isAdmin = false }: MenuListProps) {
+  // Get URL parameters
+  const searchParams = useSearchParams();
+  const shopId = searchParams.get("shopId");
+
+  // Invalidate cache when shopId changes to ensure fresh data
+  useEffect(() => {
+    // This will be handled by the useEffect dependency in the query hook
+  }, [shopId]);
+
   // State for categories and subcategories
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -32,10 +43,11 @@ export function MenuList({ onEditMenu }: MenuListProps) {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCategoryLoading, setIsCategoryLoading] = useState(false);
 
-  // Get all menus
+  // Get menus filtered by shopId if provided
   const { data, isLoading, error } = useMenusPaginated({
     page: 1,
     limit: 1000, // Get all menus, we'll paginate client-side per category
+    shopId: shopId || undefined,
   });
   const deleteMenuMutation = useDeleteMenu();
 
@@ -139,7 +151,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
     <div className='max-w-7xl mx-auto px-2 sm:px-4'>
       <Card className='border-2 sm:border-4 border-primary bg-card'>
         {/* Header with search and actions */}
-        <MenuListHeader searchTerm={menuFilters.searchTerm} onSearchChange={menuFilters.setSearchTerm} onCreateMenu={() => onEditMenu(null)} onCreateCategory={() => setIsCreateCategoryOpen(true)} />
+        <MenuListHeader searchTerm={menuFilters.searchTerm} onSearchChange={menuFilters.setSearchTerm} onCreateMenu={() => onEditMenu(null)} onCreateCategory={() => setIsCreateCategoryOpen(true)} isAdmin={isAdmin} />
 
         {/* Category and subcategory filters - desktop only */}
         <div className='p-4 sm:p-6'>
@@ -203,6 +215,7 @@ export function MenuList({ onEditMenu }: MenuListProps) {
         subcategories={subcategories}
         selectedSubcategoryId={menuFilters.selectedSubcategoryId}
         onSubcategoryChange={menuFilters.setSelectedSubcategoryId}
+        isAdmin={isAdmin}
       />
 
       {/* Category Dialogs */}

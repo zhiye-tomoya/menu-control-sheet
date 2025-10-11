@@ -23,13 +23,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
       return NextResponse.json(formattedSubcategory);
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error fetching subcategory:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -64,13 +62,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
       return NextResponse.json(formattedSubcategory);
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error updating subcategory:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }
 
@@ -81,12 +77,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       await db.delete(subcategories).where(eq(subcategories.id, params.id));
       return NextResponse.json({ success: true });
     } else {
-      // Return error - client should use localStorage directly
-      return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
   } catch (error) {
     console.error("Error deleting subcategory:", error);
-    // Return 503 for database issues to trigger localStorage fallback
-    return NextResponse.json({ error: "Database not configured - use localStorage" }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 }

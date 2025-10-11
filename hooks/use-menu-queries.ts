@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 export const menuQueryKeys = {
   all: ["menus"] as const,
   lists: () => [...menuQueryKeys.all, "list"] as const,
-  list: (params?: PaginationParams) => [...menuQueryKeys.lists(), params] as const,
+  list: (params?: PaginationParams & { shopId?: string }) => [...menuQueryKeys.lists(), params] as const,
   details: () => [...menuQueryKeys.all, "detail"] as const,
   detail: (id: string) => [...menuQueryKeys.details(), id] as const,
 };
@@ -20,8 +20,8 @@ export function useMenus() {
   });
 }
 
-// Hook to get menus with pagination
-export function useMenusPaginated(params: PaginationParams) {
+// Hook to get menus with pagination and optional shopId filter
+export function useMenusPaginated(params: PaginationParams & { shopId?: string }) {
   return useQuery({
     queryKey: menuQueryKeys.list(params),
     queryFn: () => menuService.getMenus(params),

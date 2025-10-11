@@ -13,25 +13,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const category = searchParams.get("category");
+    const shopId = searchParams.get("shopId");
+
+    // Build conditions array - shopId filter is always required if provided
+    const conditions = [];
+
+    if (shopId) {
+      conditions.push(eq(ingredients.shopId, shopId));
+    }
+
+    if (search) {
+      conditions.push(or(ilike(ingredients.name, `%${search}%`), ilike(ingredients.description, `%${search}%`)));
+    }
+
+    if (category && category !== "all") {
+      conditions.push(eq(ingredients.category, category));
+    }
 
     let allIngredients;
-
-    if (search || (category && category !== "all")) {
-      // Apply filters
-      const conditions = [];
-
-      if (search) {
-        conditions.push(or(ilike(ingredients.name, `%${search}%`), ilike(ingredients.description, `%${search}%`)));
-      }
-
-      if (category && category !== "all") {
-        conditions.push(eq(ingredients.category, category));
-      }
-
+    if (conditions.length > 0) {
       const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
       allIngredients = await db.select().from(ingredients).where(whereClause).orderBy(ingredients.name);
     } else {
-      // No filters
+      // No shop filter provided - return all ingredients (for backward compatibility)
       allIngredients = await db.select().from(ingredients).orderBy(ingredients.name);
     }
 
@@ -50,10 +54,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, defaultUnit, pricingUnit, conversionFactor, currentPrice, category, description, organizationId } = body;
+    const { name, defaultUnit, pricingUnit, conversionFactor, currentPrice, category, description, shopId } = body;
 
     // Validate required fields
-    if (!name || !defaultUnit || !pricingUnit || !conversionFactor || !currentPrice || !organizationId) {
+    if (!name || !defaultUnit || !pricingUnit || !conversionFactor || !currentPrice || !shopId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
       currentPrice: String(currentPrice),
       category: category?.trim() || "",
       description: description?.trim() || "",
-      organizationId,
+      shopId,
     };
 
     const [createdIngredient] = await db.insert(ingredients).values(newIngredient).returning();

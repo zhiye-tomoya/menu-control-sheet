@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface IngredientFormProps {
   ingredient?: IngredientData;
-  organizationId?: string;
+  shopId?: string;
   onSave: () => void;
   onCancel: () => void;
 }
@@ -22,14 +22,14 @@ const UNIT_OPTIONS = ["g", "ml", "個", "袋", "振り", "枚", "本", "缶", "�
 
 const CATEGORY_OPTIONS = ["野菜・果物", "肉類", "魚介類", "乳製品", "穀物・麺類", "調味料・スパイス", "油脂類", "飲み物", "冷凍食品", "その他"];
 
-export function IngredientForm({ ingredient, organizationId = "default-org", onSave, onCancel }: IngredientFormProps) {
+export function IngredientForm({ ingredient, shopId = "default-shop", onSave, onCancel }: IngredientFormProps) {
   const [formData, setFormData] = useState<CreateIngredientInput>({
     name: "",
     defaultUnit: "g",
     pricingUnit: "g",
     conversionFactor: 1,
     currentPrice: 0,
-    organizationId,
+    shopId,
     category: "",
     description: "",
   });
@@ -54,7 +54,7 @@ export function IngredientForm({ ingredient, organizationId = "default-org", onS
         pricingUnit: ingredient.pricingUnit,
         conversionFactor,
         currentPrice,
-        organizationId,
+        shopId,
         category: ingredient.category && ingredient.category.trim() ? ingredient.category : "none",
         description: ingredient.description || "",
       });

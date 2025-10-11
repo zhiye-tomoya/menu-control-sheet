@@ -46,7 +46,7 @@ npm run db:push
 
 1. Open your browser to the running application
 2. Try creating a new menu item
-3. The data should now be stored in your Neon database instead of localStorage
+3. The data is now stored in your Neon database
 
 ## Optional: Database Studio
 
@@ -69,8 +69,8 @@ This will open a web interface where you can view and edit your database data di
 - ✅ Database schema defined (`lib/db/schema.ts`)
 - ✅ Database connection setup with fallback (`lib/db/connection.ts`)
 - ✅ API routes configured to use database when available
-- ✅ Menu service updated to handle both database and localStorage
+- ✅ Menu service uses database exclusively
 - ✅ Drizzle configuration file (`drizzle.config.ts`)
 - ✅ Package.json scripts for database operations
 
-Once you complete the steps above, your application will be fully migrated from localStorage to PostgreSQL!
+Once you complete the steps above, your application will be fully using PostgreSQL!

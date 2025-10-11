@@ -72,11 +72,14 @@ export default function SignInPage() {
             <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
-            <div className='text-center text-sm'>
-              Don't have an organization?{" "}
-              <Link href='/auth/register' className='text-blue-600 hover:underline'>
-                Create one here
-              </Link>
+            <div className='text-center text-sm space-y-2'>
+              <div>
+                Don't have an organization?{" "}
+                <Link href='/auth/register' className='text-blue-600 hover:underline'>
+                  Create one here
+                </Link>
+              </div>
+              <div className='text-xs text-gray-500'>Note: You must create an organization first before you can sign in</div>
             </div>
           </CardFooter>
         </form>
