@@ -31,6 +31,11 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
     category: "",
     description: "",
   });
+
+  // Separate string states for number inputs to prevent typing issues
+  const [conversionFactorInput, setConversionFactorInput] = useState("1");
+  const [currentPriceInput, setCurrentPriceInput] = useState("0");
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -38,15 +43,22 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
   // Initialize form data when editing
   useEffect(() => {
     if (ingredient) {
+      const conversionFactor = Number(ingredient.conversionFactor);
+      const currentPrice = Number(ingredient.currentPrice);
+
       setFormData({
         name: ingredient.name,
         defaultUnit: ingredient.defaultUnit,
         pricingUnit: ingredient.pricingUnit,
-        conversionFactor: Number(ingredient.conversionFactor),
-        currentPrice: Number(ingredient.currentPrice),
+        conversionFactor,
+        currentPrice,
         category: ingredient.category && ingredient.category.trim() ? ingredient.category : "none",
         description: ingredient.description || "",
       });
+
+      // Also update the string input states for number fields
+      setConversionFactorInput(conversionFactor.toString());
+      setCurrentPriceInput(currentPrice.toString());
     }
   }, [ingredient]);
 
@@ -183,7 +195,21 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
               (1{formData.pricingUnit}あたりの{formData.defaultUnit}数)
             </span>
           </Label>
-          <Input id='conversionFactor' type='number' step='0.1' min='0.1' value={formData.conversionFactor} onChange={(e) => setFormData((prev) => ({ ...prev, conversionFactor: Number(e.target.value) || 0 }))} placeholder='例: 250 (250gの袋の場合)' className={errors.conversionFactor ? "border-red-500" : ""} />
+          <Input
+            id='conversionFactor'
+            type='number'
+            step='0.1'
+            min='0.1'
+            value={conversionFactorInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              setConversionFactorInput(value);
+              const numericValue = parseFloat(value) || 0;
+              setFormData((prev) => ({ ...prev, conversionFactor: numericValue }));
+            }}
+            placeholder='例: 250 (250gの袋の場合)'
+            className={errors.conversionFactor ? "border-red-500" : ""}
+          />
           {errors.conversionFactor && <p className='text-sm text-red-500 mt-1'>{errors.conversionFactor}</p>}
         </div>
 
@@ -192,7 +218,21 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
           <Label htmlFor='currentPrice'>
             単価(税別) *<span className='text-sm text-muted-foreground ml-1'>(1{formData.pricingUnit}あたりの価格)</span>
           </Label>
-          <Input id='currentPrice' type='number' step='0.01' min='0.01' value={formData.currentPrice} onChange={(e) => setFormData((prev) => ({ ...prev, currentPrice: Number(e.target.value) || 0 }))} placeholder='例: 350 (350円/袋)' className={errors.currentPrice ? "border-red-500" : ""} />
+          <Input
+            id='currentPrice'
+            type='number'
+            step='0.01'
+            min='0.01'
+            value={currentPriceInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              setCurrentPriceInput(value);
+              const numericValue = parseFloat(value) || 0;
+              setFormData((prev) => ({ ...prev, currentPrice: numericValue }));
+            }}
+            placeholder='例: 350 (350円/袋)'
+            className={errors.currentPrice ? "border-red-500" : ""}
+          />
           {errors.currentPrice && <p className='text-sm text-red-500 mt-1'>{errors.currentPrice}</p>}
         </div>
 
