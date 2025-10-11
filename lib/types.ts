@@ -92,6 +92,7 @@ export interface CreateMenuInput {
   name: string;
   imageUrl: string;
   subcategoryId: string;
+  shopId?: string; // Add shopId for multi-tenant support
   // Support both new and legacy format
   ingredients?: Ingredient[]; // legacy
   recipeIngredients?: Omit<RecipeIngredient, "createdAt">[]; // new normalized

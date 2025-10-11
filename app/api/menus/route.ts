@@ -150,6 +150,7 @@ export async function POST(request: Request) {
         sellingPrice: input.sellingPrice.toFixed(2),
         totalCost: totalCost.toFixed(2),
         costRate: costRate.toFixed(2),
+        shopId: input.shopId || "default-shop", // Add shopId - should come from input or session
         createdAt: new Date(),
         updatedAt: new Date(),
       };

@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, defaultUnit, pricingUnit, conversionFactor, currentPrice, category, description } = body;
+    const { name, defaultUnit, pricingUnit, conversionFactor, currentPrice, category, description, organizationId } = body;
 
     // Validate required fields
-    if (!name || !defaultUnit || !pricingUnit || !conversionFactor || !currentPrice) {
+    if (!name || !defaultUnit || !pricingUnit || !conversionFactor || !currentPrice || !organizationId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       currentPrice: String(currentPrice),
       category: category?.trim() || "",
       description: description?.trim() || "",
+      organizationId,
     };
 
     const [createdIngredient] = await db.insert(ingredients).values(newIngredient).returning();
