@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home } from "lucide-react";
 import { IngredientsManagement } from "@/components/ingredients-management";
 
-export default function IngredientsPage() {
+// Separate component for search params logic
+function IngredientsContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,5 +79,25 @@ export default function IngredientsPage() {
       {/* Main Content */}
       <IngredientsManagement isAdmin={isAdmin} />
     </div>
+  );
+}
+
+// Loading fallback component
+function IngredientsLoading() {
+  return (
+    <div className='min-h-screen flex items-center justify-center'>
+      <div className='text-center'>
+        <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900'></div>
+        <p className='mt-4'>Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function IngredientsPage() {
+  return (
+    <Suspense fallback={<IngredientsLoading />}>
+      <IngredientsContent />
+    </Suspense>
   );
 }
